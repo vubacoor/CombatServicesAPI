@@ -3,66 +3,35 @@ using System.Collections.Generic;
 using System.Linq;
 using CombatServiceAPI.Constants;
 using CombatServiceAPI.Characters;
+using CombatServiceAPI.Formation;
 
 namespace CombatServiceAPI.Modules
 {
     public class Battle
     {
-        private List<Character> userCharacters;
-        private List<Character> opponentCharacters;
+        private List<BaseCharacter> userCharacters;
+        private List<BaseCharacter> opponentCharacters;
+        private FormationController formationController;
 
         public Battle()
         {
 
         }
 
-        public Battle(List<FormationCharacter> _userCharacters, List<FormationCharacter> _opponentCharacters)
+        public Battle(List<BaseCharacter> _userCharacters, List<BaseCharacter> _opponentCharacters)
         {
-            userCharacters = new List<Character>();
-            opponentCharacters = new List<Character>();
+            formationController = new FormationController();
+            userCharacters = new List<BaseCharacter>();
+            opponentCharacters = new List<BaseCharacter>();
             for (int i = 0; i < _userCharacters.Count; i++)
             {
-                FormationCharacter currentChar = _userCharacters[i];
-                ICharacterActions guardianActions = new BonusDamageActions(new CharacterActions());
-                Character character = new CharacterBuilder()
-                    .AddId(currentChar._id)
-                    .AddKey(currentChar.key)
-                    .AddBaseKey(currentChar.baseKey)
-                    .AddStatus(currentChar.status)
-                    .AddItemList(currentChar.itemList)
-                    .AddAtk(currentChar.atk)
-                    .AddDef(currentChar.def)
-                    .AddSpeed(currentChar.speed)
-                    .AddHp(currentChar.hp)
-                    .AddLevel(currentChar.level)
-                    .AddContractAddress(currentChar.contractAddress)
-                    .AddNftId(currentChar.nftId)
-                    .AddPosition(currentChar.position)
-                    .AddRace(currentChar.race)
-                    .Build();
-                userCharacters.Add(character);
+                BaseCharacter currentChar = _userCharacters[i];
+                formationController.AddCharacter(currentChar, "user");
             }
             for (int i = 0; i < _opponentCharacters.Count; i++)
             {
-                FormationCharacter currentChar = _opponentCharacters[i];
-                ICharacterActions guardianActions = new BonusDamageActions(new CharacterActions());
-                Character character = new CharacterBuilder()
-                    .AddId(currentChar._id)
-                    .AddKey(currentChar.key)
-                    .AddBaseKey(currentChar.baseKey)
-                    .AddStatus(currentChar.status)
-                    .AddItemList(currentChar.itemList)
-                    .AddAtk(currentChar.atk)
-                    .AddDef(currentChar.def)
-                    .AddSpeed(currentChar.speed)
-                    .AddHp(currentChar.hp)
-                    .AddLevel(currentChar.level)
-                    .AddContractAddress(currentChar.contractAddress)
-                    .AddNftId(currentChar.nftId)
-                    .AddPosition(currentChar.position)
-                    .AddRace(currentChar.race)
-                    .Build();
-                opponentCharacters.Add(character);
+                BaseCharacter currentChar = _opponentCharacters[i];
+                formationController.AddCharacter(currentChar, "opponent");
             }
         }
 
@@ -75,13 +44,13 @@ namespace CombatServiceAPI.Modules
             do
             {
                 turn++;
-                List<Character> orderQueue = new List<Character>(userCharacters.Count + opponentCharacters.Count);
+                List<BaseCharacter> orderQueue = new List<BaseCharacter>(formationController.userCharacters.Count + formationController.opponentCharacters.Count);
                 orderQueue.AddRange(userCharacters);
                 orderQueue.AddRange(opponentCharacters);
                 orderQueue = orderQueue.OrderByDescending(character => character.speed).ToList();
                 for (int i = 0; i < orderQueue.Count; i++)
                 {
-                    Character currentCharacter = orderQueue[i];
+                    BaseCharacter currentCharacter = orderQueue[i];
                     if (CheckIfFinishedCombat())
                     {
                         break;
@@ -104,7 +73,7 @@ namespace CombatServiceAPI.Modules
             return battleData;
         }
 
-        public BattleProgess ProgessBattleSingleOpponentTarget(Character currentCharacter, int turn, int order)
+        public BattleProgess ProgessBattleSingleOpponentTarget(BaseCharacter currentCharacter, int turn, int order)
         {
             BattleProgess battleProgress = new BattleProgess();
             battleProgress.turn = turn;
@@ -113,30 +82,42 @@ namespace CombatServiceAPI.Modules
             battleProgress.target = new List<BattleUnit>();
             if (userCharacters.Where(character => character._id == currentCharacter._id).FirstOrDefault() != null)
             {
-                Character targetCharacter = GetSingleTarget(currentCharacter, opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.NEAREST_TARGET);
-                ICharacterActions baseActions = new CharacterActions();
-                CharacterActionsDecorator actions = new BonusDamageActions(baseActions);
-                actions = new DecreaseDamageActions(actions);
-                actions = new ValidateHealthActions(actions);
-                targetCharacter.hp = actions.NormalFight(currentCharacter, targetCharacter);
+                BaseCharacter targetCharacter = GetSingleTarget(currentCharacter, opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.NEAREST_TARGET);
+                ICombatLogic combatLogic = new CombatLogic();
+                RaceInfo raceInfo = BattleLogic.GetRaceInfo(currentCharacter.race);
+                if (raceInfo.counterRaces.Contains(targetCharacter.race))
+                {
+                    combatLogic = new IncreaseDamage(combatLogic, 10);
+                }
+                if (raceInfo.couterByRaces.Contains(targetCharacter.race))
+                {
+                    combatLogic = new DecreaseDamage(combatLogic, 10);
+                }
+                targetCharacter.hp -= combatLogic.CalculateDamage(currentCharacter.atk);
                 battleProgress.attacker = new BattleUnit(currentCharacter.atk, currentCharacter.def, currentCharacter.speed, currentCharacter.hp, currentCharacter._id, "OurSide");
                 battleProgress.target.Add(new BattleUnit(targetCharacter.atk, targetCharacter.def, targetCharacter.speed, targetCharacter.hp, targetCharacter._id, "OpposingSide"));
             }
             else if (opponentCharacters.Where(character => character._id == currentCharacter._id).FirstOrDefault() != null)
             {
-                Character targetCharacter = GetSingleTarget(currentCharacter, userCharacters, CONST_COMBAT.SET_TARGET_TYPE.NEAREST_TARGET);
-                ICharacterActions baseActions = new CharacterActions();
-                CharacterActionsDecorator actions = new BonusDamageActions(baseActions);
-                actions = new DecreaseDamageActions(actions);
-                actions = new ValidateHealthActions(actions);
-                targetCharacter.hp = actions.NormalFight(currentCharacter, targetCharacter);
+                BaseCharacter targetCharacter = GetSingleTarget(currentCharacter, userCharacters, CONST_COMBAT.SET_TARGET_TYPE.NEAREST_TARGET);
+                ICombatLogic combatLogic = new CombatLogic();
+                RaceInfo raceInfo = BattleLogic.GetRaceInfo(currentCharacter.race);
+                if (raceInfo.counterRaces.Contains(targetCharacter.race))
+                {
+                    combatLogic = new IncreaseDamage(combatLogic, 10);
+                }
+                if (raceInfo.couterByRaces.Contains(targetCharacter.race))
+                {
+                    combatLogic = new DecreaseDamage(combatLogic, 10);
+                }
+                targetCharacter.hp -= combatLogic.CalculateDamage(currentCharacter.atk);
                 battleProgress.attacker = new BattleUnit(currentCharacter.atk, currentCharacter.def, currentCharacter.speed, currentCharacter.hp, currentCharacter._id, "OpposingSide");
                 battleProgress.target.Add(new BattleUnit(targetCharacter.atk, targetCharacter.def, targetCharacter.speed, targetCharacter.hp, targetCharacter._id, "OurSide"));
             }
             return battleProgress;
         }
 
-        public BattleProgess ProgessBattleMultipleOpponentTarget(Character currentCharacter, int turn, int order)
+        public BattleProgess ProgessBattleMultipleOpponentTarget(BaseCharacter currentCharacter, int turn, int order)
         {
             BattleProgess battleProgress = new BattleProgess();
             battleProgress.turn = turn;
@@ -145,7 +126,7 @@ namespace CombatServiceAPI.Modules
             battleProgress.target = new List<BattleUnit>();
             if (userCharacters.Where(character => character._id == currentCharacter._id).FirstOrDefault() != null)
             {
-                List<Character> targetCharacters = GetMultipleTarget(currentCharacter, opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.ROW_TARGETS);
+                List<BaseCharacter> targetCharacters = GetMultipleTarget(currentCharacter, opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.ROW_TARGETS);
                 targetCharacters.ForEach(targetCharacter =>
                 {
                     targetCharacter.hp = GetUpdateHealth(targetCharacter.hp, CONST_COMBAT.CAST_TYPE.ATTACK, currentCharacter.atk);
@@ -155,7 +136,7 @@ namespace CombatServiceAPI.Modules
             }
             else if (opponentCharacters.Where(character => character._id == currentCharacter._id).FirstOrDefault() != null)
             {
-                List<Character> targetCharacters = GetMultipleTarget(currentCharacter, userCharacters, CONST_COMBAT.SET_TARGET_TYPE.ROW_TARGETS);
+                List<BaseCharacter> targetCharacters = GetMultipleTarget(currentCharacter, userCharacters, CONST_COMBAT.SET_TARGET_TYPE.ROW_TARGETS);
                 targetCharacters.ForEach(targetCharacter =>
                 {
                     targetCharacter.hp = GetUpdateHealth(targetCharacter.hp, CONST_COMBAT.CAST_TYPE.ATTACK, currentCharacter.atk);
@@ -199,7 +180,7 @@ namespace CombatServiceAPI.Modules
             return isFinished;
         }
 
-        public Character GetSingleTarget(Character character, List<Character> targetCharacters, CONST_COMBAT.SET_TARGET_TYPE setTargetType)
+        public BaseCharacter GetSingleTarget(BaseCharacter character, List<BaseCharacter> targetCharacters, CONST_COMBAT.SET_TARGET_TYPE setTargetType)
         {
             targetCharacters = targetCharacters.Where(ch => ch.hp > 0).ToList();
             int charPos = character.position;
@@ -236,11 +217,11 @@ namespace CombatServiceAPI.Modules
             return distanceWithCharacter.character;
         }
 
-        public List<Character> GetMultipleTarget(Character character, List<Character> targetCharacters, CONST_COMBAT.SET_TARGET_TYPE setTargetType)
+        public List<BaseCharacter> GetMultipleTarget(BaseCharacter character, List<BaseCharacter> targetCharacters, CONST_COMBAT.SET_TARGET_TYPE setTargetType)
         {
             targetCharacters = targetCharacters.Where(ch => ch.hp > 0).ToList();
             int charPos = character.position;
-            List<Character> characters = new List<Character>();
+            List<BaseCharacter> characters = new List<BaseCharacter>();
             for (int i = 0; i < targetCharacters.Count; i++)
             {
                 int tPosition = targetCharacters[i].position;
@@ -250,7 +231,7 @@ namespace CombatServiceAPI.Modules
                 }
                 else if (setTargetType == CONST_COMBAT.SET_TARGET_TYPE.ROW_TARGETS)
                 {
-                    Character nearestOpponent = GetSingleTarget(character, targetCharacters, CONST_COMBAT.SET_TARGET_TYPE.NEAREST_TARGET);
+                    BaseCharacter nearestOpponent = GetSingleTarget(character, targetCharacters, CONST_COMBAT.SET_TARGET_TYPE.NEAREST_TARGET);
                     switch (nearestOpponent.position)
                     {
                         case 0:

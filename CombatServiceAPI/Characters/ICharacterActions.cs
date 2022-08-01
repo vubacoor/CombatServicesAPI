@@ -1,8 +1,10 @@
-﻿namespace CombatServiceAPI.Characters
+﻿using System.Collections.Generic;
+
+namespace CombatServiceAPI.Characters
 {
     public interface ICharacterActions
     {
-        int NormalFight(Character character, Character target);
-        int SpecialFight(Character character, Character target);
+        public void InitPassive();
+        public void TurnPassive();
     }
 }

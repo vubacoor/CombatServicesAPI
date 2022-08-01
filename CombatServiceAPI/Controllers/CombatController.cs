@@ -4,6 +4,7 @@ using CombatServiceAPI.Model;
 using System.Collections.Generic;
 using CombatServiceAPI.Modules;
 using CombatServiceAPI.Models;
+using CombatServiceAPI.Characters;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -16,13 +17,16 @@ namespace CombatServiceAPI.Controllers
         [HttpPost]
         public BattleData GetCombat(GetBattleInput battleInput)
         {
-            List<FormationCharacter> userCharacters = battleInput.userCharacters;
-            List<FormationCharacter> opponentCharacters = battleInput.opponentCharacters;
+            List<BaseCharacter> userCharacters = battleInput.userCharacters;
+            List<BaseCharacter> opponentCharacters = battleInput.opponentCharacters;
             Battle battle = new Battle(userCharacters, opponentCharacters);
             BattleData data = battle.GetBattleData();
             return data;
         }
-
-
+        [HttpGet("test")]
+        public string TestGetCombat()
+        {
+            return "haha";
+        }
     }
 }
