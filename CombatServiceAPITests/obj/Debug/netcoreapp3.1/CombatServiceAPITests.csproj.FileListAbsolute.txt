@@ -1,6 +1,0 @@
-C:\Users\hoang\OneDrive\Desktop\Bacoor\CombatServicesAPI\CombatServiceAPITests\bin\Debug\netcoreapp3.1\CoverletSourceRootsMapping
-C:\Users\hoang\OneDrive\Desktop\Bacoor\CombatServicesAPI\CombatServiceAPITests\obj\Debug\netcoreapp3.1\CombatServiceAPITests.csproj.AssemblyReference.cache
-C:\Users\hoang\OneDrive\Desktop\Bacoor\CombatServicesAPI\CombatServiceAPITests\obj\Debug\netcoreapp3.1\CombatServiceAPITests.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\hoang\OneDrive\Desktop\Bacoor\CombatServicesAPI\CombatServiceAPITests\obj\Debug\netcoreapp3.1\CombatServiceAPITests.AssemblyInfoInputs.cache
-C:\Users\hoang\OneDrive\Desktop\Bacoor\CombatServicesAPI\CombatServiceAPITests\obj\Debug\netcoreapp3.1\CombatServiceAPITests.AssemblyInfo.cs
-C:\Users\hoang\OneDrive\Desktop\Bacoor\CombatServicesAPI\CombatServiceAPITests\obj\Debug\netcoreapp3.1\CombatServiceAPITests.csproj.CoreCompileInputs.cache
