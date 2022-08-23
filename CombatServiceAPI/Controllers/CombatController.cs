@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using CombatServiceAPI.Model;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using CombatServiceAPI.Modules;
 using CombatServiceAPI.Models;
+using CombatServiceAPI.Passive.Models;
 using CombatServiceAPI.Characters;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Net.Http;
 
 namespace CombatServiceAPI.Controllers
 {
@@ -15,13 +15,27 @@ namespace CombatServiceAPI.Controllers
     public class CombatController : ControllerBase
     {
         [HttpPost]
-        public BattleData GetCombat(GetBattleInput battleInput)
+        public async Task<List<CombatTurn>> GetCombat(GetBattleInput battleInput)
         {
-            List<BaseCharacter> userCharacters = battleInput.userCharacters;
-            List<BaseCharacter> opponentCharacters = battleInput.opponentCharacters;
-            Battle battle = new Battle(userCharacters, opponentCharacters);
-            BattleData data = battle.GetBattleData();
-            return data;
+            List<Character> userCharacters = battleInput.userCharacters;
+            userCharacters[0].baseStat = battleInput.userCharacters[0].baseStat;
+            List<Character> opponentCharacters = battleInput.opponentCharacters;
+            Dictionary<string, Dictionary<string, Effect>> effects = await GetEffectsConfig();
+            Battle battle = new Battle(userCharacters, opponentCharacters, effects);
+            return battle.GetCombatData();
+        }
+
+        public async Task<Dictionary<string, Dictionary<string, Effect>>> GetEffectsConfig()
+        {
+            using (var client = new HttpClient())
+            {
+                using (var response = await client.GetAsync("https://jsonkeeper.com/b/SXCF"))
+                {
+                    string apiResponse = await response.Content.ReadAsStringAsync();
+                    Dictionary<string, Dictionary<string, Effect>> effects = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, Effect>>>(apiResponse);
+                    return effects;
+                }
+            }
         }
         [HttpGet("test")]
         public string TestGetCombat()

@@ -1,10 +1,10 @@
 ﻿using CombatServiceAPI.Characters;
 
-namespace CombatServiceAPI.Model
+namespace CombatServiceAPI.Models
 {
     public class DistanceWithCharacter
     {
         public int distance { get; set; }
-        public BaseCharacter character { get; set; }
+        public Character character { get; set; }
     }
 }

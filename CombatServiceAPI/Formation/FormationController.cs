@@ -5,53 +5,23 @@ namespace CombatServiceAPI.Formation
 {
     public class FormationController
     {
-        public List<BaseCharacter> userCharacters;
-        public List<BaseCharacter> opponentCharacters;
+        public List<Character> userCharacters;
+        public List<Character> opponentCharacters;
 
         public FormationController()
         {
-            userCharacters = new List<BaseCharacter>();
-            opponentCharacters = new List<BaseCharacter>();
+            userCharacters = new List<Character>();
+            opponentCharacters = new List<Character>();
         }
-        public void AddCharacter(BaseCharacter character, string side)
+        public void AddCharacter(Character character, string side)
         {
-            switch (character.element)
+            if (side == "user")
             {
-                case "Anima":
-                    Anima animaChar = (Anima)character;
-                    if (side == "user")
-                    {
-                        userCharacters.Add(animaChar);
-                    }
-                    else
-                    {
-                        opponentCharacters.Add(animaChar);
-                    }
-                    break;
-                case "Aqua":
-                    Aqua aquaChar = (Aqua)character;
-                    if (side == "user")
-                    {
-                        userCharacters.Add(aquaChar);
-                    }
-                    else
-                    {
-                        opponentCharacters.Add(aquaChar);
-                    }
-                    break;
-                case "Earth":
-                    Earth earthChar = (Earth)character;
-                    if (side == "user")
-                    {
-                        userCharacters.Add(earthChar);
-                    }
-                    else
-                    {
-                        opponentCharacters.Add(earthChar);
-                    }
-                    break;
-                default:
-                    break;
+                userCharacters.Add(character);
+            }
+            else
+            {
+                opponentCharacters.Add(character);
             }
         }
     }

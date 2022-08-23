@@ -4,7 +4,6 @@ namespace CombatServiceAPI.Characters
 {
     public interface ICharacterActions
     {
-        public void InitPassive();
-        public void TurnPassive();
+        public void Attack();
     }
 }
