@@ -98,6 +98,7 @@ namespace CombatServiceAPI.Characters
                             }
                             else
                             {
+                                var flag = true;
                                 ultimateEffects.Add(effect);
                             }
                             break;
@@ -128,7 +129,7 @@ namespace CombatServiceAPI.Characters
 
         public void ApplyEffect(Effect effect, int currentTurn)
         {
-            if (BattleLogic.CheckIfCanTriggerEffect(effect.cost, effect.rate, currentTurn, effect.stackable))
+            if (BattleLogic.CheckIfCanTriggerEffect(effect, combatStat, currentTurn))
             {
                 if (effect.expireTurn != -1)
                 {
@@ -155,26 +156,33 @@ namespace CombatServiceAPI.Characters
 
         public void ApplyActiveEffect(Effect effect, Character target, int currentTurn)
         {
-            if (BattleLogic.CheckIfCanTriggerEffect(effect.cost, effect.rate, currentTurn, effect.stackable))
+            if (BattleLogic.CheckIfCanTriggerEffect(effect, combatStat, currentTurn))
             {
                 if (effect.effectBase == "ELEMENT_DAMAGE" || effect.effectBase == "FLAT_DAMAGE")
                 {
                     CombatStat bonusStat = StatCalculator.GetDeviantStats(this.combatStat, effect);
-                    target.combatStat.takenHp += bonusStat.atk;
+                    if (target.combatStat.takenHp + bonusStat.atk > target.combatStat.hp)
+                    {
+                        target.combatStat.takenHp = target.combatStat.hp;
+                    }
+                    else
+                    {
+                        target.combatStat.takenHp += bonusStat.atk;
+                    }
                 }
             }
         }
 
         public void ApplyRecoverEffect(Effect effect, Character target, int currentTurn)
         {
-            if (BattleLogic.CheckIfCanTriggerEffect(effect.cost, effect.rate, currentTurn, effect.stackable))
+            if (BattleLogic.CheckIfCanTriggerEffect(effect, combatStat, currentTurn))
             {
                 if (target.combatStat.takenHp > 0)
                 {
                     float recoverAmt = StatCalculator.GetRecoverAmt(target.combatStat, effect);
                     if (target.combatStat.takenHp - recoverAmt >= 0)
                     {
-                        target.combatStat.takenHp = target.combatStat.takenHp - recoverAmt;
+                        target.combatStat.takenHp -= recoverAmt;
                     }
                     else
                     {
@@ -184,9 +192,34 @@ namespace CombatServiceAPI.Characters
             }
         }
 
+        public void ApplySpecialEffect(Effect effect, Character target)
+        {
+            switch (effect.additionalEffect)
+            {
+                case "SELF_EXPLOSION":
+                    this.ApplySelfExplosionEffect(effect, target);
+                    break;
+                case "FIRE_ROAR":
+                    this.ApplyFireRoarEffect(effect);
+                    break;
+            }
+        }
+
+        public void ApplySelfExplosionEffect(Effect effect, Character target)
+        {
+            float totalDamage = StatCalculator.GetDeviantStats(this.combatStat, effect).hp;
+            this.combatStat.takenHp = this.combatStat.hp;
+            target.combatStat.takenHp += totalDamage;
+        }
+        public void ApplyFireRoarEffect(Effect effect)
+        {
+            CombatStat baseStatLite = new CombatStat(baseStat.atk, baseStat.def, baseStat.speed, baseStat.hp, 0, 0, baseStat.crit, baseStat.luck);
+            combatStat.atk += StatCalculator.GetDeviantStats(baseStatLite, effect).atk;
+        }
+
         public bool CheckIfcanUseUltimate(int currentTurn)
         {
-            return (BattleLogic.CheckIfCanTriggerEffect(ultimateEffects[0].cost, ultimateEffects[0].rate, currentTurn, ultimateEffects[0].stackable));
+            return BattleLogic.CheckIfCanTriggerEffect(ultimateEffects[0], combatStat, currentTurn);
         }
 
         public List<Effect> GetOverrideEffectsBaseOnType(Effect prevEffect)

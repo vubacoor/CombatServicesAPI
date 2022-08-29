@@ -5,14 +5,14 @@ namespace CombatServiceAPI.Models
     public class CombatTurn
     {
         public int turn { get; set; }
-        public List<EffectOutput> startTurnEffects { get; set; }
+        public StartTurn startTurn { get; set; }
         public List<CombatOrder> orders { get; set; }
 
         public CombatTurn() { }
-        public CombatTurn(int turn, List<EffectOutput> startTurnEffects, List<CombatOrder> orders)
+        public CombatTurn(int turn, StartTurn _startTurn, List<CombatOrder> orders)
         {
             this.turn = turn;
-            this.startTurnEffects = startTurnEffects;
+            this.startTurn = _startTurn;
             this.orders = orders;
         }
     }

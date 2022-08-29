@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using CombatServiceAPI.Models;
 
 namespace CombatServiceAPI.Model
 {
@@ -6,6 +7,6 @@ namespace CombatServiceAPI.Model
     {
         public bool skip { get; set; }
         public int status { get; set; }
-        public List<BattleProgess> battleProgress { get; set; }
+        public List<CombatTurn> battleProgress { get; set; }
     }
 }

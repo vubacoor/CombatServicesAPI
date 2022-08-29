@@ -4,6 +4,7 @@ using CombatServiceAPI.Characters;
 using CombatServiceAPI.Models;
 using CombatServiceAPI.Passive.Models;
 using System.Linq;
+using System.Text.Json;
 
 namespace CombatServiceAPI.Modules
 {
@@ -80,14 +81,48 @@ namespace CombatServiceAPI.Modules
             return disaster;
         }
 
-        public static bool CheckIfCanTriggerEffect(int cost, int rate, int turn, int stackable)
+        public static bool CheckIfCanTriggerEffect(Effect effect, CombatStat stat, int turn)
         {
             bool canTrigger;
-            if (cost == 0)
+            if (effect.cost == 0)
             {
-                if (turn <= stackable || stackable == -1 || stackable == 0)
+                if (turn <= effect.stackable || effect.stackable == -1 || effect.stackable == 0)
                 {
-                    canTrigger = true;
+                    if (effect.rate == 100)
+                    {
+                        canTrigger = true;
+                    }
+                    else
+                    {
+                        int rand = s_Random.Next(0, 101);
+                        if (rand <= effect.rate)
+                        {
+                            canTrigger = true;
+                        }
+                        else
+                        {
+                            canTrigger = false;
+                        }
+                    }
+                    if (effect.additionalEffect != "NULL")
+                    {
+                        switch (effect.additionalEffect)
+                        {
+                            case "BERSERKER":
+                            case "SELF_EXPLOSION":
+                                string healthUnderPercentString = JsonSerializer.Serialize(effect.additionalData);
+                                float healthUnderPercent = float.Parse(healthUnderPercentString);
+                                if (stat.takenHp > stat.hp / 100f * healthUnderPercent)
+                                {
+                                    canTrigger = true;
+                                }
+                                else
+                                {
+                                    canTrigger = false;
+                                }
+                                break;
+                        }
+                    }
                 }
                 else
                 {
@@ -96,9 +131,69 @@ namespace CombatServiceAPI.Modules
             }
             else
             {
-                if (turn % (cost + 1) == 0)
+                if (turn % (effect.cost + 1) == 0)
                 {
-                    canTrigger = true;
+                    int rand = s_Random.Next(0, 101);
+                    if (rand <= effect.rate)
+                    {
+                        canTrigger = true;
+                    }
+                    else
+                    {
+                        canTrigger = false;
+                    }
+                }
+                else
+                {
+                    canTrigger = false;
+                }
+
+            }
+            return canTrigger;
+        }
+
+        public static bool CheckIfCanTriggerSpecialEffect(Effect effect, Character caster, int turn)
+        {
+            bool canTrigger;
+            if (effect.cost == 0)
+            {
+                if (turn <= effect.stackable || effect.stackable == -1 || effect.stackable == 0)
+                {
+                    if (effect.rate == 100)
+                    {
+                        canTrigger = true;
+                    }
+                    else
+                    {
+                        int rand = s_Random.Next(0, 101);
+                        if (rand <= effect.rate)
+                        {
+                            canTrigger = true;
+                        }
+                        else
+                        {
+                            canTrigger = false;
+                        }
+                    }
+                }
+                else
+                {
+                    canTrigger = false;
+                }
+            }
+            else
+            {
+                if (turn % (effect.cost + 1) == 0)
+                {
+                    int rand = s_Random.Next(0, 101);
+                    if (rand <= effect.rate)
+                    {
+                        canTrigger = true;
+                    }
+                    else
+                    {
+                        canTrigger = false;
+                    }
                 }
                 else
                 {
@@ -163,7 +258,7 @@ namespace CombatServiceAPI.Modules
         {
             Character targetCharacter;
             Random rnd = new Random();
-            int randomCharIndex = rnd.Next(0, targetCharacters.Count) - 1;
+            int randomCharIndex = rnd.Next(1, targetCharacters.Count) - 1;
             targetCharacter = targetCharacters[randomCharIndex];
             return targetCharacter;
         }
@@ -270,42 +365,112 @@ namespace CombatServiceAPI.Modules
 
             if (targets != null && targets.Count > 0)
             {
-                if (effect.effectBase == "STAT_CHANGE")
+                if (effect.additionalEffect == "NULL")
                 {
-                    targets.ForEach(target =>
+                    if (effect.effectBase == "STAT_CHANGE")
                     {
-                        target.ApplyEffect(effect, currentTurn);
-                        CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, 0, 0, target.combatStat.crit, target.combatStat.luck);
-                        if (effect.expireTurn == -1)
+                        targets.ForEach(target =>
                         {
-                            effectOutputs.Add(new EffectOutput(target._id, target._id, effect.effectBase, effect.statEffect, targetNewStat));
-                        }
-                        else
+                            target.ApplyEffect(effect, currentTurn);
+                            CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
+                            if (effect.expireTurn == -1)
+                            {
+                                effectOutputs.Add(new EffectOutput(target._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
+                            }
+                            else
+                            {
+                                effectOutputs.Add(new EffectOutput(target._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, effect.expireTurn, targetNewStat));
+                            }
+                        });
+                    }
+                    else if (effect.effectBase == "ELEMENT_DAMAGE" || effect.effectBase == "FLAT_DAMAGE")
+                    {
+                        var flag = true;
+                        targets.ForEach(target =>
                         {
-                            effectOutputs.Add(new EffectOutput(target._id, target._id, effect.effectBase, effect.statEffect, effect.expireTurn, targetNewStat));
+                            caster.ApplyActiveEffect(effect, target, currentTurn);
+                            CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
+                            effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
+                        });
+                    }
+                    else if (effect.effectBase == "FLAT_RECOVER")
+                    {
+                        targets.ForEach(target =>
+                        {
+                            caster.ApplyRecoverEffect(effect, target, currentTurn);
+                            CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
+                            effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
+                        });
+                    }
+                }
+                else
+                {
+                    if (effect.effectBase == "ELEMENT_DAMAGE" || effect.effectBase == "FLAT_DAMAGE")
+                    {
+                        if (effect.additionalEffect == "CHAIN ATTACK")
+                        {
+                            string chainAmtString = JsonSerializer.Serialize(effect.additionalData);
+                            int chainAmt = Int32.Parse(chainAmtString);
+                            for (int i = 0; i < chainAmt; i++)
+                            {
+                                targets.ForEach(target =>
+                                {
+                                    caster.ApplyActiveEffect(effect, target, currentTurn);
+                                    CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
+                                    effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
+                                });
+                            }
                         }
-                    });
-                }
-                else if (effect.effectBase == "ELEMENT_DAMAGE" || effect.effectBase == "FLAT_DAMAGE")
-                {
-                    targets.ForEach(target =>
+                    }
+                    else
                     {
-                        caster.ApplyActiveEffect(effect, target, currentTurn);
-                        CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
-                        effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, targetNewStat));
-                    });
-                }
-                else if (effect.effectBase == "FLAT_RECOVER")
-                {
-                    targets.ForEach(target =>
-                    {
-                        caster.ApplyRecoverEffect(effect, target, currentTurn);
-                        CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
-                        effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, targetNewStat));
-                    });
+                        targets.ForEach(target =>
+                            {
+                                caster.ApplySpecialEffect(effect, target);
+                                CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
+                                effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
+                            });
+                    }
                 }
             }
             return effectOutputs;
+        }
+        public static bool CheckIfFinishedCombat(List<Character> userCharacters, List<Character> opponentCharacters)
+        {
+            bool isFinished = false;
+            if (userCharacters.Where(character => character.combatStat.takenHp < character.combatStat.hp).Count() == 0 || opponentCharacters.Where(character => character.combatStat.takenHp < character.combatStat.hp).Count() == 0)
+            {
+                isFinished = true;
+            }
+            else
+            {
+                isFinished = false;
+            }
+            return isFinished;
+        }
+        public static int GetResult(List<Character> userCharacters, List<Character> opponentCharacters)
+        {
+            int result = 0;
+            if (opponentCharacters.Where(character => character.combatStat.takenHp < character.combatStat.hp).Count() == 0 && userCharacters.Where(character => character.combatStat.takenHp < character.combatStat.hp).Count() > 0)
+            {
+                result = 1;
+            }
+            else if (userCharacters.Where(character => character.combatStat.takenHp < character.combatStat.hp).Count() == 0 && opponentCharacters.Where(character => character.combatStat.takenHp < character.combatStat.hp).Count() > 0)
+            {
+                result = -1;
+            }
+            else
+            {
+                result = 0;
+            }
+            return result;
+        }
+
+        public static bool CheckIfDead(Character character)
+        {
+            bool isDead = false;
+            if (character.combatStat.takenHp >= character.combatStat.hp) isDead = true;
+            return isDead;
         }
     }
 }

@@ -7,7 +7,7 @@ namespace CombatServiceAPI.Services
 {
     public static class StatCalculator
     {
-        public static CombatStat GetDeviantStats(CombatStat baseStat, Effect effect)
+        public static CombatStat GetDeviantStats(CombatStat stat, Effect effect)
         {
             CombatStat deviantStats = new CombatStat(0, 0, 0, 0, 0, 0, 0, 0);
             string amtString = Convert.ToString(effect.amount);
@@ -26,23 +26,23 @@ namespace CombatServiceAPI.Services
                 {
                     case StatEffect.HP_TARGET:
                     case StatEffect.HP_OWNER:
-                        deviantStats.hp += baseStat.hp * (amtPerRariry / 100f);
+                        deviantStats.hp += stat.hp * (amtPerRariry / 100f);
                         break;
                     case StatEffect.SPD_TARGET:
                     case StatEffect.SPD_OWNER:
-                        deviantStats.speed += baseStat.speed * (amtPerRariry / 100f);
+                        deviantStats.speed += stat.speed * (amtPerRariry / 100f);
                         break;
                     case StatEffect.ATK_TARGET:
                     case StatEffect.ATK_OWNER:
-                        deviantStats.atk += baseStat.atk * (amtPerRariry / 100f);
+                        deviantStats.atk += stat.atk * (amtPerRariry / 100f);
                         break;
                     case StatEffect.DEF_TARGET:
                     case StatEffect.DEF_OWNER:
-                        deviantStats.def += baseStat.def * (amtPerRariry / 100f);
+                        deviantStats.def += stat.def * (amtPerRariry / 100f);
                         break;
                     case StatEffect.DAMAGE_TARGET:
                     case StatEffect.DAMAGE_OWNER:
-                        deviantStats.atk += baseStat.atk * (amtPerRariry / 100f);
+                        deviantStats.atk += stat.atk * (amtPerRariry / 100f);
                         break;
                 }
             }

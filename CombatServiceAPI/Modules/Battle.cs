@@ -95,12 +95,15 @@ namespace CombatServiceAPI.Modules
             return characterEffects;
         }
 
-        public List<CombatTurn> GetCombatData()
+        public BattleData GetCombatData()
         {
+            BattleData batleData = new BattleData();
             List<CombatTurn> battleProgress = new List<CombatTurn>();
-            List<CombatStat> result = new List<CombatStat>();
             List<TestPassiveData> passiveDataList = new List<TestPassiveData>();
-            CombatTurn starGameCombatTurn = new CombatTurn(0, new List<EffectOutput>(), null);
+            StartTurn startTurn = new StartTurn();
+            startTurn.effects = new List<EffectOutput>();
+            startTurn.characterStats = new Dictionary<string, CombatStat>();
+            CombatTurn starGameCombatTurn = new CombatTurn(0, startTurn, null);
             List<Character> allCharacters = new List<Character>(userCharacters.Count + opponentCharacters.Count);
             allCharacters.AddRange(userCharacters);
             allCharacters.AddRange(opponentCharacters);
@@ -114,10 +117,24 @@ namespace CombatServiceAPI.Modules
                     {
                         effectOutputs.ForEach(effectOutput =>
                         {
-                            starGameCombatTurn.startTurnEffects.Add(effectOutput);
+                            starGameCombatTurn.startTurn.effects.Add(effectOutput);
                         });
                     }
                 });
+            });
+
+            allCharacters.ForEach(character =>
+            {
+                CombatStat combatStat = new CombatStat(
+                    character.combatStat.atk,
+                    character.combatStat.def,
+                    character.combatStat.speed,
+                    character.combatStat.hp,
+                    character.combatStat.takenHp,
+                    character.combatStat.reduceDamage,
+                    character.combatStat.crit,
+                    character.combatStat.luck);
+                starGameCombatTurn.startTurn.characterStats.Add(character._id, combatStat);
             });
 
             battleProgress.Add(starGameCombatTurn);
@@ -125,155 +142,190 @@ namespace CombatServiceAPI.Modules
             List<Character> orderQueue = new List<Character>(userCharacters.Count + opponentCharacters.Count);
             orderQueue.AddRange(userCharacters);
             orderQueue.AddRange(opponentCharacters);
-
-            for (int i = 0; i < 5; i++)
+            int turn = 0;
+            do
             {
                 CombatTurn currentCombatTurn = new CombatTurn();
-                currentCombatTurn.turn = i + 1;
-                currentCombatTurn.startTurnEffects = new List<EffectOutput>();
+                currentCombatTurn.turn = turn + 1;
+                currentCombatTurn.startTurn = new StartTurn();
+                currentCombatTurn.startTurn.effects = new List<EffectOutput>();
+                currentCombatTurn.startTurn.characterStats = new Dictionary<string, CombatStat>();
                 currentCombatTurn.orders = new List<CombatOrder>();
+                allCharacters = allCharacters.Where(character => !BattleLogic.CheckIfDead(character)).ToList();
                 allCharacters.ForEach(character =>
                 {
                     character.startTurnEffects.ForEach(effect =>
                     {
-                        bool canTrigger = BattleLogic.CheckIfCanTriggerEffect(effect.cost, effect.rate, i + 1, effect.stackable);
+                        bool canTrigger = BattleLogic.CheckIfCanTriggerEffect(effect, character.combatStat, turn + 1);
                         if (canTrigger)
                         {
-                            List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(effect, effect.target, userCharacters, opponentCharacters, character, character.side, i + 1);
+                            List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(effect, effect.target, userCharacters, opponentCharacters, character, character.side, turn + 1);
                             if (effectOutputs != null && effectOutputs.Count > 0)
                             {
                                 effectOutputs.ForEach(effectOutput =>
                                 {
-                                    currentCombatTurn.startTurnEffects.Add(effectOutput);
+                                    currentCombatTurn.startTurn.effects.Add(effectOutput);
                                 });
                             };
                         }
                     });
                 });
 
-                orderQueue = orderQueue.OrderByDescending(character => character.combatStat.speed).ToList();
+                allCharacters.ForEach(character =>
+                {
+                    CombatStat combatStat = new CombatStat(
+                    character.combatStat.atk,
+                    character.combatStat.def,
+                    character.combatStat.speed,
+                    character.combatStat.hp,
+                    character.combatStat.takenHp,
+                    character.combatStat.reduceDamage,
+                    character.combatStat.crit,
+                    character.combatStat.luck);
+                    currentCombatTurn.startTurn.characterStats.Add(character._id, combatStat);
+                });
+
+                orderQueue = orderQueue.Where(character => !BattleLogic.CheckIfDead(character)).OrderByDescending(character => character.combatStat.speed).ToList();
 
                 int order = 1;
 
-                orderQueue.ForEach(character =>
+                for (int i = 0; i < orderQueue.Count; i++)
                 {
-                    currentCombatTurn.orders.Add(new CombatOrder(order, new List<EffectOutput>()));
-                    character.startCharacterEffects.ForEach(effect =>
+                    if (!BattleLogic.CheckIfFinishedCombat(userCharacters, opponentCharacters))
                     {
-                        bool canTrigger = BattleLogic.CheckIfCanTriggerEffect(effect.cost, effect.rate, i + 1, effect.stackable);
-                        if (canTrigger)
+                        Character character = orderQueue[i];
+                        if (!BattleLogic.CheckIfDead(character))
                         {
-                            List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(effect, effect.target, userCharacters, opponentCharacters, character, character.side, i + 1);
-                            if (effectOutputs != null && effectOutputs.Count > 0)
+                            currentCombatTurn.orders.Add(new CombatOrder(order, character._id, new List<EffectOutput>(), new List<EffectOutput>()));
+                            character.startCharacterEffects.ForEach(effect =>
                             {
-                                effectOutputs.ForEach(effectOutput =>
+                                bool canTrigger = BattleLogic.CheckIfCanTriggerEffect(effect, character.combatStat, turn + 1);
+                                if (canTrigger)
                                 {
-                                    currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].effectOutputs.Add(effectOutput);
+                                    List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(effect, effect.target, userCharacters, opponentCharacters, character, character.side, turn + 1);
+                                    if (effectOutputs != null && effectOutputs.Count > 0)
+                                    {
+                                        effectOutputs.ForEach(effectOutput =>
+                                        {
+                                            currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].actionEffects.Add(effectOutput);
+                                        });
+                                    }
+                                }
+                            });
+                            bool canUltimate = character.CheckIfcanUseUltimate(turn + 1);
+                            if (canUltimate)
+                            {
+                                character.ultimateEffects.ForEach(effect =>
+                                {
+                                    List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(effect, effect.target, userCharacters, opponentCharacters, character, character.side, turn + 1);
+                                    if (effectOutputs != null && effectOutputs.Count > 0)
+                                    {
+                                        effectOutputs.ForEach(effectOutput =>
+                                        {
+                                            currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].actionEffects.Add(effectOutput);
+                                        });
+                                    }
+                                    List<Effect> overrideEffectsBaseOnType = character.GetOverrideEffectsBaseOnType(effect);
+                                    overrideEffectsBaseOnType.ForEach(overrideEffect =>
+                                    {
+                                        string targetType = overrideEffect.target;
+                                        string ultimateSkillTargetType = effect.target;
+                                        if (targetType == "OVERRIDE_TARGET")
+                                        {
+                                            targetType = ultimateSkillTargetType;
+                                        }
+                                        List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(overrideEffect, targetType, userCharacters, opponentCharacters, character, character.side, turn + 1);
+
+                                        if (effectOutputs != null && effectOutputs.Count > 0)
+                                        {
+                                            effectOutputs.ForEach(effectOutput =>
+                                            {
+                                                currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].actionEffects.Add(effectOutput);
+                                            });
+                                        }
+                                    });
                                 });
                             }
+                            else
+                            {
+                                character.normalSkillEffects.ForEach(effect =>
+                                {
+                                    List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(effect, effect.target, userCharacters, opponentCharacters, character, character.side, turn + 1);
+                                    string normalSkillTargetType = effect.target;
+                                    if (effectOutputs != null && effectOutputs.Count > 0)
+                                    {
+                                        effectOutputs.ForEach(effectOutput =>
+                                        {
+                                            currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].actionEffects.Add(effectOutput);
+                                        });
+                                    }
+                                    List<Effect> overrideEffectsBaseOnType = character.GetOverrideEffectsBaseOnType(effect);
+                                    overrideEffectsBaseOnType.ForEach(overrideEffect =>
+                                    {
+                                        string targetType = overrideEffect.target;
+                                        if (targetType == "OVERRIDE_TARGET")
+                                        {
+                                            targetType = normalSkillTargetType;
+                                        }
+                                        List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(overrideEffect, targetType, userCharacters, opponentCharacters, character, character.side, turn + 1);
+
+                                        if (effectOutputs != null && effectOutputs.Count > 0)
+                                        {
+                                            effectOutputs.ForEach(effectOutput =>
+                                            {
+                                                currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].actionEffects.Add(effectOutput);
+                                            });
+                                        }
+                                    });
+                                });
+                            }
+                            allCharacters.Where(character => !BattleLogic.CheckIfDead(character)).ToList().ForEach(filteredCharacter =>
+                            {
+                                filteredCharacter.endOrderEffects.ForEach(effect =>
+                                {
+                                    bool canTrigger = BattleLogic.CheckIfCanTriggerEffect(effect, character.combatStat, turn + 1);
+                                    if (canTrigger)
+                                    {
+                                        List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(effect, effect.target, userCharacters, opponentCharacters, filteredCharacter, filteredCharacter.side, turn + 1);
+                                        if (effectOutputs != null && effectOutputs.Count > 0)
+                                        {
+                                            effectOutputs.ForEach(effectOutput =>
+                                            {
+                                                currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].endOrderEffects.Add(effectOutput);
+                                            });
+                                        }
+                                    }
+                                });
+                            });
+                            Dictionary<string, CombatStat> characterStats = new Dictionary<string, CombatStat>();
+                            allCharacters.ForEach(character =>
+                            {
+                                CombatStat combatStat = new CombatStat(
+                                    character.combatStat.atk,
+                                    character.combatStat.def,
+                                    character.combatStat.speed,
+                                    character.combatStat.hp,
+                                    character.combatStat.takenHp,
+                                    character.combatStat.reduceDamage,
+                                    character.combatStat.crit,
+                                    character.combatStat.luck);
+                                characterStats.Add(character._id, combatStat);
+                            });
+                            currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].characterStats = characterStats;
+                            order++;
                         }
-                    });
-                    bool canUltimate = character.CheckIfcanUseUltimate(i + 1);
-                    if (canUltimate)
-                    {
-                        character.ultimateEffects.ForEach(effect =>
-                        {
-                            List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(effect, effect.target, userCharacters, opponentCharacters, character, character.side, i + 1);
-                            if (effectOutputs != null && effectOutputs.Count > 0)
-                            {
-                                effectOutputs.ForEach(effectOutput =>
-                                {
-                                    currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].effectOutputs.Add(effectOutput);
-                                });
-                            }
-                        });
                     }
                     else
                     {
-                        character.normalSkillEffects.ForEach(effect =>
-                        {
-                            List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(effect, effect.target, userCharacters, opponentCharacters, character, character.side, i + 1);
-                            string normalSkillTargetType = effect.target;
-                            if (effectOutputs != null && effectOutputs.Count > 0)
-                            {
-                                effectOutputs.ForEach(effectOutput =>
-                                {
-                                    currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].effectOutputs.Add(effectOutput);
-                                });
-                            }
-                            List<Effect> overrideEffectsBaseOnType = character.GetOverrideEffectsBaseOnType(effect);
-                            overrideEffectsBaseOnType.ForEach(overrideEffect =>
-                            {
-                                string targetType = overrideEffect.target;
-                                if (targetType == "OVERRIDE_TARGET")
-                                {
-                                    targetType = normalSkillTargetType;
-                                }
-                                List<EffectOutput> effectOutputs = BattleLogic.GetEffectOutput(overrideEffect, targetType, userCharacters, opponentCharacters, character, character.side, i + 1);
-
-                                if (effectOutputs != null && effectOutputs.Count > 0)
-                                {
-                                    effectOutputs.ForEach(effectOutput =>
-                                    {
-                                        currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].effectOutputs.Add(effectOutput);
-                                    });
-                                }
-                            });
-                        });
+                        break;
                     }
-                    Dictionary<string, CombatStat> characterStats = new Dictionary<string, CombatStat>();
-                    allCharacters.ForEach(character =>
-                    {
-                        CombatStat combatStat = new CombatStat(
-                            character.combatStat.atk,
-                            character.combatStat.def,
-                            character.combatStat.speed,
-                            character.combatStat.hp,
-                            character.combatStat.takenHp,
-                            character.combatStat.reduceDamage,
-                            character.combatStat.crit,
-                            character.combatStat.luck);
-                        characterStats.Add(character._id, combatStat);
-                    });
-                    currentCombatTurn.orders[currentCombatTurn.orders.Count - 1].characterStats = characterStats;
-                    order++;
-                });
+                }
                 battleProgress.Add(currentCombatTurn);
-            }
-            return battleProgress;
+            } while (!BattleLogic.CheckIfFinishedCombat(userCharacters, opponentCharacters));
+            batleData.status = BattleLogic.GetResult(userCharacters, opponentCharacters);
+            batleData.battleProgress = battleProgress;
+            return batleData;
         }
     }
-
-    //public int GetResult()
-    //{
-    //    int result = 0;
-    //    if (opponentCharacters.Where(character => character.hp > 0).Count() == 0 && userCharacters.Where(character => character.hp > 0).Count() > 0)
-    //    {
-    //        result = 1;
-    //    }
-    //    else if (userCharacters.Where(character => character.hp > 0).Count() == 0 && opponentCharacters.Where(character => character.hp > 0).Count() > 0)
-    //    {
-    //        result = -1;
-    //    }
-    //    else
-    //    {
-    //        result = 0;
-    //    }
-    //    return result;
-    //}
-
-    //public bool CheckIfFinishedCombat()
-    //{
-    //    bool isFinished = false;
-    //    if (userCharacters.Where(character => character.hp > 0).Count() == 0 || opponentCharacters.Where(character => character.hp > 0).Count() == 0)
-    //    {
-    //        isFinished = true;
-    //    }
-    //    else
-    //    {
-    //        isFinished = false;
-    //    }
-    //    return isFinished;
-    //}
 }
 

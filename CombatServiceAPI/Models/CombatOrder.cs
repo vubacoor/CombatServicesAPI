@@ -6,14 +6,19 @@ namespace CombatServiceAPI.Models
     public class CombatOrder
     {
         public int orderNo { get; set; }
-        public List<EffectOutput> effectOutputs { get; set; }
+
+        public string characterId { get; set; }
+        public List<EffectOutput> actionEffects { get; set; }
+        public List<EffectOutput> endOrderEffects { get; set; }
 
         public Dictionary<string, CombatStat> characterStats { get; set; }
 
-        public CombatOrder(int orderNo, List<EffectOutput> effectOutputs)
+        public CombatOrder(int orderNo, string characterId, List<EffectOutput> actionEffects, List<EffectOutput> endOrderEffects)
         {
             this.orderNo = orderNo;
-            this.effectOutputs = effectOutputs;
+            this.characterId = characterId;
+            this.actionEffects = actionEffects;
+            this.endOrderEffects = endOrderEffects;
         }
     }
 }

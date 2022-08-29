@@ -16,7 +16,7 @@ namespace CombatServiceAPI.Passive.Decorators
 
         public override CombatStat CalculateStat(CombatStat combatStat, int turn)
         {
-            bool canTrigger = BattleLogic.CheckIfCanTriggerEffect(effect.cost, effect.rate, turn, effect.stackable);
+            bool canTrigger = BattleLogic.CheckIfCanTriggerEffect(effect, combatStat, turn);
             if (canTrigger)
             {
                 HandleCalculateStat(combatStat, turn);

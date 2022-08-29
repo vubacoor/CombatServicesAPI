@@ -10,6 +10,8 @@ using FluentAssertions;
 using System.Net.Http;
 using CombatServiceAPI.Models;
 using System.Text.Json;
+using CombatServiceAPI.Passive.Models;
+using CombatServiceAPI.Model;
 
 namespace CombatServiceAPI.Modules
 {
@@ -19,7 +21,24 @@ namespace CombatServiceAPI.Modules
         [TestMethod()]
         public void TestIfCanTriggerEffect()
         {
-            bool canTrigger = BattleLogic.CheckIfCanTriggerEffect(0, 100, 6, 5);
+            Effect effect = new Effect(
+                "1",
+                "Guardian",
+                "Passive",
+                "STAT_CHANGE",
+                10,
+                "PERCENT",
+                "SELF",
+                "DEF_OWNER",
+                -1,
+                -1,
+                100,
+                3,
+                null,
+                null,
+                "START_TURN");
+            CombatStat combatStat = new CombatStat(100, 100, 100, 100, 0, 0, 0, 0);
+            bool canTrigger = BattleLogic.CheckIfCanTriggerEffect(effect, combatStat, 1);
             Assert.AreEqual(false, canTrigger);
         }
         [TestMethod()]
@@ -186,8 +205,8 @@ namespace CombatServiceAPI.Modules
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpResponseMessage response = await TestClient.PostAsync("/api/combat", httpContent);
             string responseString = await response.Content.ReadAsStringAsync();
-            List<CombatTurn> castResult = JsonSerializer.Deserialize<List<CombatTurn>>(responseString);
-            float atk = castResult[3].orders[castResult[castResult.Count - 1].orders.Count - 1].characterStats["1"].atk;
+            BattleData castResult = JsonSerializer.Deserialize<BattleData>(responseString);
+            float atk = castResult.battleProgress[3].orders[castResult.battleProgress[castResult.battleProgress.Count - 1].orders.Count - 1].characterStats["1"].atk;
             Assert.AreEqual(60.5f, atk);
         }
         [TestMethod()]
@@ -202,8 +221,8 @@ namespace CombatServiceAPI.Modules
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpResponseMessage response = await TestClient.PostAsync("/api/combat", httpContent);
             string responseString = await response.Content.ReadAsStringAsync();
-            List<CombatTurn> castResult = JsonSerializer.Deserialize<List<CombatTurn>>(responseString);
-            float speed = castResult[3].orders[castResult[castResult.Count - 1].orders.Count - 1].characterStats["1"].speed;
+            BattleData castResult = JsonSerializer.Deserialize<BattleData>(responseString);
+            float speed = castResult.battleProgress[3].orders[castResult.battleProgress[castResult.battleProgress.Count - 1].orders.Count - 1].characterStats["1"].speed;
             Assert.AreEqual(10.5f, speed);
         }
         [TestMethod()]
@@ -218,9 +237,9 @@ namespace CombatServiceAPI.Modules
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpResponseMessage response = await TestClient.PostAsync("/api/combat", httpContent);
             string responseString = await response.Content.ReadAsStringAsync();
-            List<CombatTurn> castResult = JsonSerializer.Deserialize<List<CombatTurn>>(responseString);
-            float hp = castResult[3].orders[castResult[castResult.Count - 1].orders.Count - 1].characterStats["1"].hp;
-            float def = castResult[3].orders[castResult[castResult.Count - 1].orders.Count - 1].characterStats["1"].def;
+            BattleData castResult = JsonSerializer.Deserialize<BattleData>(responseString);
+            float hp = castResult.battleProgress[3].orders[castResult.battleProgress[castResult.battleProgress.Count - 1].orders.Count - 1].characterStats["1"].hp;
+            float def = castResult.battleProgress[3].orders[castResult.battleProgress[castResult.battleProgress.Count - 1].orders.Count - 1].characterStats["1"].def;
             Assert.AreEqual(105f, hp);
             Assert.AreEqual(215f, def);
         }
@@ -236,15 +255,38 @@ namespace CombatServiceAPI.Modules
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpResponseMessage response = await TestClient.PostAsync("/api/combat", httpContent);
             string responseString = await response.Content.ReadAsStringAsync();
-            List<CombatTurn> castResult = JsonSerializer.Deserialize<List<CombatTurn>>(responseString);
-            float hp = castResult[3].orders[castResult[castResult.Count - 1].orders.Count - 1].characterStats["1"].hp;
-            float def = castResult[3].orders[castResult[castResult.Count - 1].orders.Count - 1].characterStats["1"].def;
-            float atk = castResult[3].orders[castResult[castResult.Count - 1].orders.Count - 1].characterStats["1"].atk;
-            float spd = castResult[3].orders[castResult[castResult.Count - 1].orders.Count - 1].characterStats["1"].speed;
+            BattleData castResult = JsonSerializer.Deserialize<BattleData>(responseString);
+            float hp = castResult.battleProgress[3].orders[castResult.battleProgress[castResult.battleProgress.Count - 1].orders.Count - 1].characterStats["1"].hp;
+            float def = castResult.battleProgress[3].orders[castResult.battleProgress[castResult.battleProgress.Count - 1].orders.Count - 1].characterStats["1"].def;
+            float atk = castResult.battleProgress[3].orders[castResult.battleProgress[castResult.battleProgress.Count - 1].orders.Count - 1].characterStats["1"].atk;
+            float spd = castResult.battleProgress[3].orders[castResult.battleProgress[castResult.battleProgress.Count - 1].orders.Count - 1].characterStats["1"].speed;
             Assert.AreEqual(105f, hp);
             Assert.AreEqual(210f, def);
             Assert.AreEqual(52.5f, atk);
             Assert.AreEqual(10.1f, spd);
+        }
+        [TestMethod()]
+        public async Task TestDamageGuardianIgnis_Ultimate()
+        {
+            GetBattleInput getBattleInput = new GetBattleInput();
+            getBattleInput.userCharacters = new List<Character>();
+            getBattleInput.opponentCharacters = new List<Character>();
+            getBattleInput.userCharacters.Add(new Character("user0", "key1", 0, new BaseStat(50, 200, 10, 100, 1, "Guardian", "Ignis", 0, 0)));
+            getBattleInput.opponentCharacters.Add(new Character("enemy0", "key2", 0, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Earth", 0, 0)));
+            getBattleInput.opponentCharacters.Add(new Character("enemy3", "key2", 3, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Earth", 0, 0)));
+            getBattleInput.opponentCharacters.Add(new Character("enemy6", "key2", 6, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Earth", 0, 0)));
+            string json = JsonSerializer.Serialize(getBattleInput);
+            StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            HttpResponseMessage response = await TestClient.PostAsync("/api/combat", httpContent);
+            string responseString = await response.Content.ReadAsStringAsync();
+            BattleData castResult = JsonSerializer.Deserialize<BattleData>(responseString);
+            CombatOrder order = castResult.battleProgress[4].orders.First(order => order.characterId == "user0");
+            Dictionary<string, CombatStat> characterStats = order.characterStats;
+            Character caster = getBattleInput.userCharacters[0];
+            float casterBaseAtk = caster.baseStat.atk;
+            float amtAtkIncreasePerTurn = (casterBaseAtk * (1f / 100f)) + 3;
+            float finalAtk = ((caster.baseStat.atk + (amtAtkIncreasePerTurn * 4)) / 100) * 135;
+            Assert.AreEqual(finalAtk, order.characterStats["user0"].atk / 100 * 135);
         }
     }
 }

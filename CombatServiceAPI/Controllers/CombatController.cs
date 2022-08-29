@@ -4,6 +4,7 @@ using CombatServiceAPI.Modules;
 using CombatServiceAPI.Models;
 using CombatServiceAPI.Passive.Models;
 using CombatServiceAPI.Characters;
+using CombatServiceAPI.Model;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Net.Http;
@@ -15,7 +16,7 @@ namespace CombatServiceAPI.Controllers
     public class CombatController : ControllerBase
     {
         [HttpPost]
-        public async Task<List<CombatTurn>> GetCombat(GetBattleInput battleInput)
+        public async Task<BattleData> GetCombat(GetBattleInput battleInput)
         {
             List<Character> userCharacters = battleInput.userCharacters;
             userCharacters[0].baseStat = battleInput.userCharacters[0].baseStat;
@@ -29,7 +30,7 @@ namespace CombatServiceAPI.Controllers
         {
             using (var client = new HttpClient())
             {
-                using (var response = await client.GetAsync("https://jsonkeeper.com/b/SXCF"))
+                using (var response = await client.GetAsync("https://jsonkeeper.com/b/Z992"))
                 {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     Dictionary<string, Dictionary<string, Effect>> effects = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, Effect>>>(apiResponse);
