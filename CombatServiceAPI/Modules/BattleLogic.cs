@@ -17,11 +17,20 @@ namespace CombatServiceAPI.Modules
     public class BattleLogic
     {
         private static Random s_Random = new Random();
-        public static ElementInfo GetElementInfo(string race)
+        /// <summary>
+        /// Get element counter element & counter by element
+        /// </summary>
+        /// <param name="element">
+        /// element of character
+        /// </param>
+        /// <returns>
+        /// element counter element & counter by element
+        /// </returns>
+        public static ElementInfo GetElementInfo(string element)
         {
             ElementInfo elementInfo = new ElementInfo();
 
-            switch (race)
+            switch (element)
             {
                 case ELEMENT.Aqua:
                     elementInfo.couterByElement = ELEMENT.Eleki;
@@ -53,6 +62,15 @@ namespace CombatServiceAPI.Modules
             return elementInfo;
         }
 
+        /// <summary>
+        /// Check if disaster happens
+        /// </summary>
+        /// <param name="luck">
+        /// highest luck of all characters on each side
+        /// </param>
+        /// <returns>
+        /// return disaster type if disaster happen, none if not
+        /// </returns>
         public static CONST_COMBAT.DISASTER_TYPE CheckDisater(float luck)
         {
             CONST_COMBAT.DISASTER_TYPE disaster = CONST_COMBAT.DISASTER_TYPE.NONE;
@@ -81,6 +99,21 @@ namespace CombatServiceAPI.Modules
             return disaster;
         }
 
+        /// <summary>
+        /// Check if one effect can trigger
+        /// </summary>
+        /// <param name="effect">
+        /// Effect needs to be checked
+        /// </param>
+        /// <param name="stat">
+        /// combat stat of caster of that effect
+        /// </param>
+        /// <param name="turn">
+        /// current turn
+        /// </param>
+        /// <returns>
+        /// true if can trigger, false if cannot
+        /// </returns>
         public static bool CheckIfCanTriggerEffect(Effect effect, CombatStat stat, int turn)
         {
             bool canTrigger;
@@ -114,6 +147,7 @@ namespace CombatServiceAPI.Modules
                                 float healthUnderPercent = float.Parse(healthUnderPercentString);
                                 if (stat.takenHp > stat.hp / 100f * healthUnderPercent)
                                 {
+                                    var flag = true;
                                     canTrigger = true;
                                 }
                                 else
@@ -151,7 +185,21 @@ namespace CombatServiceAPI.Modules
             }
             return canTrigger;
         }
-
+        /// <summary>
+        /// Check if can trigger special effect
+        /// </summary>
+        /// <param name="effect">
+        /// Effect needs to be checked
+        /// </param>
+        /// <param name="caster">
+        ///  combat stat of caster of that effect
+        /// </param>
+        /// <param name="turn">
+        /// Current turn
+        /// </param>
+        /// <returns>
+        ///  true if can trigger, false if cannot
+        /// </returns>
         public static bool CheckIfCanTriggerSpecialEffect(Effect effect, Character caster, int turn)
         {
             bool canTrigger;
@@ -203,6 +251,26 @@ namespace CombatServiceAPI.Modules
             }
             return canTrigger;
         }
+
+        /// <summary>
+        /// Get list of targets of effect
+        /// </summary>
+        /// <param name="targetType">
+        /// Effect's target type
+        /// </param>
+        /// <param name="userCharacters">
+        /// List of all user characters
+        /// </param>
+        /// <param name="opponentCharacters">
+        /// List of all opponent characters
+        /// </param>
+        /// <param name="caster">
+        /// Caster of effect
+        /// </param>
+        /// <param name="casterSide">
+        /// side of caster (opponent or user)
+        /// </param>
+        /// <returns></returns>
         public static List<Character> GetTargets(string targetType, List<Character> userCharacters, List<Character> opponentCharacters, Character caster, string casterSide)
         {
             List<Character> target = new List<Character>();
@@ -254,6 +322,16 @@ namespace CombatServiceAPI.Modules
             }
             return target;
         }
+
+        /// <summary>
+        /// Get random enemy
+        /// </summary>
+        /// <param name="targetCharacters">
+        /// Get random target enemy
+        /// </param>
+        /// <returns>
+        /// random target (single)
+        /// </returns>
         public static Character GetRandomEnemy(List<Character> targetCharacters)
         {
             Character targetCharacter;
@@ -298,6 +376,20 @@ namespace CombatServiceAPI.Modules
             }
             return distanceWithCharacter.character;
         }
+
+        /// <summary>
+        /// Get multile target
+        /// </summary>
+        /// <param name="character">
+        /// caster of effect need to get multile targets
+        /// </param>
+        /// <param name="targetCharacters">
+        /// 
+        /// </param>
+        /// <param name="setTargetType"></param>
+        /// <returns>
+        /// List of targets
+        /// </returns>
         public static List<Character> GetMultipleTarget(Character character, List<Character> targetCharacters, CONST_COMBAT.SET_TARGET_TYPE setTargetType)
         {
             targetCharacters = targetCharacters.ToList();
@@ -357,7 +449,31 @@ namespace CombatServiceAPI.Modules
             }
             return characters;
         }
-
+        /// <summary>
+        /// Get effect output
+        /// </summary>
+        /// <param name="effect">
+        /// Effect need to get effect output
+        /// </param>
+        /// <param name="targetType">
+        /// effect's target type
+        /// </param>
+        /// <param name="userCharacters">
+        /// list of user characters
+        /// </param>
+        /// <param name="opponentCharacters">
+        /// list of opponnent characters
+        /// </param>
+        /// <param name="caster">
+        /// Caster of effect
+        /// </param>
+        /// <param name="casterSide">
+        /// side of caster (user or opponent)
+        /// </param>
+        /// <param name="currentTurn">
+        /// current turn
+        /// </param>
+        /// <returns></returns>
         public static List<EffectOutput> GetEffectOutput(Effect effect, string targetType, List<Character> userCharacters, List<Character> opponentCharacters, Character caster, string casterSide, int currentTurn)
         {
             List<EffectOutput> effectOutputs = new List<EffectOutput>();
@@ -435,6 +551,18 @@ namespace CombatServiceAPI.Modules
             }
             return effectOutputs;
         }
+        /// <summary>
+        /// Check if finished combat (combat is finished when all characters of one side all have takenHp <= combat stat hp)
+        /// </summary>
+        /// <param name="userCharacters">
+        /// List of user characters
+        /// </param>
+        /// <param name="opponentCharacters">
+        /// List of opponent characters
+        /// </param>
+        /// <returns>
+        /// true if combat finish, false if not
+        /// </returns>
         public static bool CheckIfFinishedCombat(List<Character> userCharacters, List<Character> opponentCharacters)
         {
             bool isFinished = false;
@@ -448,6 +576,19 @@ namespace CombatServiceAPI.Modules
             }
             return isFinished;
         }
+
+        /// <summary>
+        /// Get result of combat
+        /// </summary>
+        /// <param name="userCharacters">
+        /// List of user characters
+        /// </param>
+        /// <param name="opponentCharacters">
+        /// List of opponent characters
+        /// </param>
+        /// <returns>
+        /// -1 if opponent win, 1 if user win, 0 if draw
+        /// </returns>
         public static int GetResult(List<Character> userCharacters, List<Character> opponentCharacters)
         {
             int result = 0;
@@ -466,6 +607,13 @@ namespace CombatServiceAPI.Modules
             return result;
         }
 
+        ./// <summary>
+        /// check if one character dead
+        /// </summary>
+        /// <param name="character"></param>
+        /// <returns>
+        /// true if dead, false if not
+        /// </returns>
         public static bool CheckIfDead(Character character)
         {
             bool isDead = false;

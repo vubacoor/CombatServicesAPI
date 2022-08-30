@@ -23,7 +23,8 @@ namespace CombatServiceAPI.Controllers
             List<Character> opponentCharacters = battleInput.opponentCharacters;
             Dictionary<string, Dictionary<string, Effect>> effects = await GetEffectsConfig();
             Battle battle = new Battle(userCharacters, opponentCharacters, effects);
-            return battle.GetCombatData();
+            BattleData battleData = battle.GetCombatData();
+            return battleData;
         }
 
         public async Task<Dictionary<string, Dictionary<string, Effect>>> GetEffectsConfig()

@@ -29,6 +29,18 @@ namespace CombatServiceAPI.Modules
             return effects;
         }
 
+        /// <summary>
+        /// Init battle
+        /// </summary>
+        /// <param name="_userCharacters">
+        /// list characters of user
+        /// </param>
+        /// <param name="_opponentCharacters">
+        /// list character of opponent
+        /// </param>
+        /// <param name="_effects">
+        /// list of all effects from config json
+        /// </param>
         public Battle(List<Character> _userCharacters, List<Character> _opponentCharacters, Dictionary<string, Dictionary<string, Effect>> _effects)
         {
             effects = new Dictionary<string, Dictionary<string, Effect>>();
@@ -70,7 +82,18 @@ namespace CombatServiceAPI.Modules
                 formationController.AddCharacter(currentChar, "opponent");
             }
         }
-
+        /// <summary>
+        /// Get character effects base on race & element
+        /// </summary>
+        /// <param name="race">
+        /// character's race
+        /// </param>
+        /// <param name="element">
+        /// character's element
+        /// </param>
+        /// <returns>
+        /// character effects dictionary with specific by type element and race
+        /// </returns>
         public Dictionary<string, List<Effect>> GetCharacterEffects(string race, string element)
         {
             Dictionary<string, List<Effect>> characterEffects = new Dictionary<string, List<Effect>>();
@@ -94,7 +117,12 @@ namespace CombatServiceAPI.Modules
             }
             return characterEffects;
         }
-
+        /// <summary>
+        /// Get combat data
+        /// </summary>
+        /// <returns>
+        /// Combat data
+        /// </returns>
         public BattleData GetCombatData()
         {
             BattleData batleData = new BattleData();
