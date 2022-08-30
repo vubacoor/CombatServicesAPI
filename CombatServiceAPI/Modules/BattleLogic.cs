@@ -145,9 +145,9 @@ namespace CombatServiceAPI.Modules
                             case "SELF_EXPLOSION":
                                 string healthUnderPercentString = JsonSerializer.Serialize(effect.additionalData);
                                 float healthUnderPercent = float.Parse(healthUnderPercentString);
-                                if (stat.takenHp > stat.hp / 100f * healthUnderPercent)
+                                var flag = stat.hp / 100f * healthUnderPercent;
+                                if (stat.hp - stat.takenHp <= stat.hp / 100f * healthUnderPercent)
                                 {
-                                    var flag = true;
                                     canTrigger = true;
                                 }
                                 else
@@ -342,7 +342,7 @@ namespace CombatServiceAPI.Modules
         }
         public static Character GetSingleTarget(Character character, List<Character> targetCharacters, string setTargetType)
         {
-            targetCharacters = targetCharacters.Where(tCharacter => tCharacter._id != character._id).ToList();
+            targetCharacters = targetCharacters.Where(tCharacter => tCharacter._id != character._id && !CheckIfDead(tCharacter)).ToList();
             int charPos = character.position;
             DistanceWithCharacter distanceWithCharacter = new DistanceWithCharacter();
             for (int i = 0; i < targetCharacters.Count; i++)
@@ -358,6 +358,7 @@ namespace CombatServiceAPI.Modules
                 {
                     if (setTargetType == "CLOSET")
                     {
+                        var flag = 1;
                         if (distance < distanceWithCharacter.distance)
                         {
                             distanceWithCharacter.distance = distance;
@@ -392,7 +393,7 @@ namespace CombatServiceAPI.Modules
         /// </returns>
         public static List<Character> GetMultipleTarget(Character character, List<Character> targetCharacters, CONST_COMBAT.SET_TARGET_TYPE setTargetType)
         {
-            targetCharacters = targetCharacters.ToList();
+            targetCharacters = targetCharacters.Where(tCharacter => !CheckIfDead(tCharacter)).ToList();
             int charPos = character.position;
             List<Character> characters = new List<Character>();
             for (int i = 0; i < targetCharacters.Count; i++)
@@ -479,7 +480,7 @@ namespace CombatServiceAPI.Modules
             List<EffectOutput> effectOutputs = new List<EffectOutput>();
             List<Character> targets = BattleLogic.GetTargets(targetType, userCharacters, opponentCharacters, caster, casterSide);
 
-            if (targets != null && targets.Count > 0)
+            if (targets != null && targets[0] != null && targets.Count > 0)
             {
                 if (effect.additionalEffect == "NULL")
                 {
@@ -542,6 +543,7 @@ namespace CombatServiceAPI.Modules
                     {
                         targets.ForEach(target =>
                             {
+                                var flag = targetType;
                                 caster.ApplySpecialEffect(effect, target);
                                 CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
                                 effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
@@ -566,7 +568,7 @@ namespace CombatServiceAPI.Modules
         public static bool CheckIfFinishedCombat(List<Character> userCharacters, List<Character> opponentCharacters)
         {
             bool isFinished = false;
-            if (userCharacters.Where(character => character.combatStat.takenHp < character.combatStat.hp).Count() == 0 || opponentCharacters.Where(character => character.combatStat.takenHp < character.combatStat.hp).Count() == 0)
+            if (userCharacters.Where(uCharacter => !CheckIfDead(uCharacter)).Count() == 0 || opponentCharacters.Where(oCharacter => !CheckIfDead(oCharacter)).Count() == 0)
             {
                 isFinished = true;
             }
@@ -617,7 +619,14 @@ namespace CombatServiceAPI.Modules
         public static bool CheckIfDead(Character character)
         {
             bool isDead = false;
-            if (character.combatStat.takenHp >= character.combatStat.hp) isDead = true;
+            if (character.combatStat.takenHp >= character.combatStat.hp)
+            {
+                isDead = true;
+            }
+            else
+            {
+                isDead = false;
+            }
             return isDead;
         }
     }

@@ -174,7 +174,8 @@ namespace CombatServiceAPI.Modules
             do
             {
                 CombatTurn currentCombatTurn = new CombatTurn();
-                currentCombatTurn.turn = turn + 1;
+                turn++;
+                currentCombatTurn.turn = turn;
                 currentCombatTurn.startTurn = new StartTurn();
                 currentCombatTurn.startTurn.effects = new List<EffectOutput>();
                 currentCombatTurn.startTurn.characterStats = new Dictionary<string, CombatStat>();
