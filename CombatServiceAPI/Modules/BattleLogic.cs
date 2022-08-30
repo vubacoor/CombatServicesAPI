@@ -607,7 +607,7 @@ namespace CombatServiceAPI.Modules
             return result;
         }
 
-        ./// <summary>
+        /// <summary>
         /// check if one character dead
         /// </summary>
         /// <param name="character"></param>
