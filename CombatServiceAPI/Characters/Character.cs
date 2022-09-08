@@ -7,6 +7,7 @@ using CombatServiceAPI.Passive.Base;
 using CombatServiceAPI.Models;
 using CombatServiceAPI.Services;
 using CombatServiceAPI.Modules;
+using CombatServiceAPI.Controllers;
 using System.Linq;
 
 namespace CombatServiceAPI.Characters
@@ -22,23 +23,13 @@ namespace CombatServiceAPI.Characters
         public string nftId { get; set; }
         public int position { get; set; }
         public string side { get; set; }
+        public string rarity { get; set; }
         public BaseStat baseStat { get; set; }
         public CombatStat combatStat = new CombatStat(0, 0, 0, 0, 0, 0, 0, 0);
-        public CombatStat tempStat = new CombatStat(0, 0, 0, 0, 0, 0, 0, 0);
 
         public CombatStat additionalStat;
-
-        public List<Effect> startGameEffects;
-        public List<Effect> startTurnEffects;
-        public List<Effect> startOrderEffects;
-        public List<Effect> endOrderEffects;
-        public List<Effect> startCharacterEffects;
-        public List<Effect> overrideEffects;
-        public List<Effect> endCharacterEffects;
-        public List<Effect> normalSkillEffects;
-        public List<Effect> ultimateEffects;
-
-        public Dictionary<string, Effect> tempEffects;
+        public Dictionary<string, Dictionary<string, Effect>> remainingEffects;
+        public EffectController effectController;
 
         public Character()
         {
@@ -51,187 +42,84 @@ namespace CombatServiceAPI.Characters
             this.side = side;
         }
 
-        public Character(string _id, string key, int position, BaseStat baseStat)
+        public Character(string _id, string key, int position, string rarity, BaseStat baseStat)
         {
             this._id = _id;
             this.key = key;
             this.position = position;
+            this.rarity = rarity;
             this.baseStat = baseStat;
         }
 
-        public void ClassifyEffects(Dictionary<string, List<Effect>> _characterEffects)
+        public void ClassifyEffects(Dictionary<string, List<Effect>> characterEffects)
         {
             combatStat = new CombatStat(baseStat.atk, baseStat.def, baseStat.speed, baseStat.hp, 0, 0, baseStat.crit, baseStat.luck);
-            startGameEffects = new List<Effect>();
-            startCharacterEffects = new List<Effect>();
-            startTurnEffects = new List<Effect>();
-            endCharacterEffects = new List<Effect>();
-            overrideEffects = new List<Effect>();
-            normalSkillEffects = new List<Effect>();
-            ultimateEffects = new List<Effect>();
-            endOrderEffects = new List<Effect>();
-            startOrderEffects = new List<Effect>();
-            tempEffects = new Dictionary<string, Effect>();
-            foreach (var item in _characterEffects)
-            {
-                var effects = item.Value;
-                effects.ForEach(effect =>
-                {
-                    switch (effect.phaseTrigger)
-                    {
-                        case PhaseTrigger.START_GAME:
-                            startGameEffects.Add(effect);
-                            break;
-                        case PhaseTrigger.START_TURN:
-                            startTurnEffects.Add(effect);
-                            break;
-                        case PhaseTrigger.START_CHARACTER:
-                            startCharacterEffects.Add(effect);
-                            break;
-                        case PhaseTrigger.END_CHARACTER:
-                            endCharacterEffects.Add(effect);
-                            break;
-                        case PhaseTrigger.ACTION:
-                            if (effect.type == EffectType.Active)
-                            {
-                                normalSkillEffects.Add(effect);
-                            }
-                            else
-                            {
-                                var flag = true;
-                                ultimateEffects.Add(effect);
-                            }
-                            break;
-                        case PhaseTrigger.OVERRIDE_PHASE:
-                            overrideEffects.Add(effect);
-                            break;
-                        case PhaseTrigger.START_ORDER:
-                            startOrderEffects.Add(effect);
-                            break;
-                        case PhaseTrigger.END_ORDER:
-                            endOrderEffects.Add(effect);
-                            break;
-                    }
-                });
-            }
+            effectController = new EffectController();
+            effectController.ClassifyEffects(characterEffects);
         }
-
-        public void AddTempEffect(Effect effect)
-        {
-            tempEffects.Add(effect.id, effect);
-        }
-
 
         public void Attack()
         {
             throw new NotImplementedException();
         }
 
-        public void ApplyEffect(Effect effect, int currentTurn)
+        public void ApplyEffect(Character target, Effect effect, int currentTurn)
         {
-            if (BattleLogic.CheckIfCanTriggerEffect(effect, combatStat, currentTurn))
+            CombatStat baseStatLite = new CombatStat(
+                target.baseStat.atk,
+                target.baseStat.def,
+                target.baseStat.speed,
+                target.baseStat.hp,
+                0,
+                0,
+                target.baseStat.crit,
+                target.baseStat.luck);
+            effectController.ApplyEffect(target, effect, baseStatLite, combatStat, rarity, currentTurn);
+        }
+
+        public void ApplyRecoverEffect(Effect effect, Character target, int currentTurn)
+        {
+            effectController.ApplyRecoverEffect(effect, target, currentTurn);
+        }
+        public void ApplySpecialEffect(Effect effect, Character target)
+        {
+
+            switch ((AdditionalEffect)Enum.Parse(typeof(AdditionalEffect), effect.additionalEffect, true))
             {
-                if (effect.expireTurn != -1)
-                {
-                    CombatStat baseStatLite = new CombatStat(baseStat.atk, baseStat.def, baseStat.speed, baseStat.hp, 0, 0, baseStat.crit, baseStat.luck);
-                    CombatStat bonusStat = StatCalculator.GetDeviantStats(baseStatLite, effect);
-                    this.tempStat.atk += bonusStat.atk;
-                    this.tempStat.hp += bonusStat.hp;
-                    this.tempStat.speed += bonusStat.speed;
-                    this.tempStat.def += bonusStat.def;
-                    this.tempStat.reduceDamage += bonusStat.reduceDamage;
-                }
-                else
-                {
-                    CombatStat baseStatLite = new CombatStat(baseStat.atk, baseStat.def, baseStat.speed, baseStat.hp, 0, 0, baseStat.crit, baseStat.luck);
-                    CombatStat bonusStat = StatCalculator.GetDeviantStats(baseStatLite, effect);
-                    this.combatStat.atk += bonusStat.atk;
-                    this.combatStat.hp += bonusStat.hp;
-                    this.combatStat.speed += bonusStat.speed;
-                    this.combatStat.def += bonusStat.def;
-                    this.combatStat.reduceDamage += bonusStat.reduceDamage;
-                }
+                case AdditionalEffect.SELF_EXPLOSION:
+                    effectController.ApplySelfExplosionEffect(effect, combatStat, target, rarity);
+                    break;
+                case AdditionalEffect.FIRE_ROAR:
+                    effectController.ApplyFireRoarEffect(target, effect);
+                    break;
             }
         }
 
         public void ApplyActiveEffect(Effect effect, Character target, int currentTurn)
         {
-            if (BattleLogic.CheckIfCanTriggerEffect(effect, combatStat, currentTurn))
-            {
-                if (effect.effectBase == "ELEMENT_DAMAGE" || effect.effectBase == "FLAT_DAMAGE")
-                {
-                    CombatStat bonusStat = StatCalculator.GetDeviantStats(this.combatStat, effect);
-                    if (target.combatStat.takenHp + bonusStat.atk > target.combatStat.hp)
-                    {
-                        target.combatStat.takenHp = target.combatStat.hp;
-                    }
-                    else
-                    {
-                        target.combatStat.takenHp += bonusStat.atk;
-                    }
-                }
-            }
+            effectController.ApplyActiveEffect(effect, combatStat, rarity, target, currentTurn);
         }
-
-        public void ApplyRecoverEffect(Effect effect, Character target, int currentTurn)
+        public void ApplyShieldEffect(Effect effect, Character target, int currentTurn)
         {
-            if (BattleLogic.CheckIfCanTriggerEffect(effect, combatStat, currentTurn))
-            {
-                if (target.combatStat.takenHp > 0)
-                {
-                    float recoverAmt = StatCalculator.GetRecoverAmt(target.combatStat, effect);
-                    if (target.combatStat.takenHp - recoverAmt >= 0)
-                    {
-                        target.combatStat.takenHp -= recoverAmt;
-                    }
-                    else
-                    {
-                        target.combatStat.takenHp = 0;
-                    }
-                }
-            }
+            effectController.ApplyShieldEffect(effect, target, currentTurn);
         }
-
-        public void ApplySpecialEffect(Effect effect, Character target)
-        {
-            switch (effect.additionalEffect)
-            {
-                case "SELF_EXPLOSION":
-                    this.ApplySelfExplosionEffect(effect, target);
-                    break;
-                case "FIRE_ROAR":
-                    this.ApplyFireRoarEffect(effect);
-                    break;
-            }
-        }
-
-        public void ApplySelfExplosionEffect(Effect effect, Character target)
-        {
-            float totalDamage = StatCalculator.GetDeviantStats(this.combatStat, effect).hp;
-            this.combatStat.takenHp = this.combatStat.hp;
-            target.combatStat.takenHp += totalDamage;
-        }
-        public void ApplyFireRoarEffect(Effect effect)
-        {
-            CombatStat baseStatLite = new CombatStat(baseStat.atk, baseStat.def, baseStat.speed, baseStat.hp, 0, 0, baseStat.crit, baseStat.luck);
-            combatStat.atk += StatCalculator.GetDeviantStats(baseStatLite, effect).atk;
-        }
-
         public bool CheckIfcanUseUltimate(int currentTurn)
         {
-            return BattleLogic.CheckIfCanTriggerEffect(ultimateEffects[0], combatStat, currentTurn);
+            return BattleLogic.CheckIfCanTriggerEffect(effectController.ultimateEffects[0], combatStat, currentTurn);
         }
 
         public List<Effect> GetOverrideEffectsBaseOnType(Effect prevEffect)
         {
             List<Effect> overrideEffectsBaseOnType = new List<Effect>();
-            switch (prevEffect.effectBase)
+            switch ((EffectBase)Enum.Parse(typeof(EffectBase), prevEffect.effectBase, true))
             {
-                case "ELEMENT_DAMAGE":
-                    overrideEffectsBaseOnType = overrideEffects.Where(effect => effect.type == "Active").ToList();
+                case EffectBase.ELEMENT_DAMAGE:
+                    overrideEffectsBaseOnType = effectController.overrideEffects.Where(effect => effect.type == EffectType.Active).ToList();
                     break;
-                case "ELEMENT_RECOVER":
-                    overrideEffectsBaseOnType = overrideEffects.Where(effect => effect.effectBase == "Buff").ToList();
+                case EffectBase.FLAT_RECOVER:
+                case EffectBase.ELEMENT_RECOVER:
+                    var flag = 1;
+                    overrideEffectsBaseOnType = effectController.overrideEffects.Where(effect => effect.type == EffectType.Buff).ToList();
                     break;
             }
             return overrideEffectsBaseOnType;

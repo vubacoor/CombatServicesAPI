@@ -52,7 +52,7 @@ namespace CombatServiceAPI.Modules
             opponentCharacters.Add(new Character("id4", 0, "opponent"));
             opponentCharacters.Add(new Character("id5", 1, "opponent"));
             opponentCharacters.Add(new Character("id6", 2, "opponent"));
-            Character targetCharacter = BattleLogic.GetSingleTarget(userCharacters[0], opponentCharacters, "CLOSET");
+            Character targetCharacter = BattleLogic.GetSingleTarget(userCharacters[0], opponentCharacters, TARGET_DISTANCE.NEAREST);
             Assert.AreEqual("id4", targetCharacter._id);
         }
         [TestMethod()]
@@ -66,7 +66,7 @@ namespace CombatServiceAPI.Modules
             opponentCharacters.Add(new Character("id4", 0, "opponent"));
             opponentCharacters.Add(new Character("id5", 1, "opponent"));
             opponentCharacters.Add(new Character("id6", 2, "opponent"));
-            Character targetCharacter = BattleLogic.GetSingleTarget(userCharacters[0], opponentCharacters, "FARTHEST");
+            Character targetCharacter = BattleLogic.GetSingleTarget(userCharacters[0], opponentCharacters, TARGET_DISTANCE.FARTHEST);
             Assert.AreEqual("id6", targetCharacter._id);
         }
         [TestMethod()]
@@ -76,7 +76,7 @@ namespace CombatServiceAPI.Modules
             userCharacters.Add(new Character("id1", 0, "user"));
             userCharacters.Add(new Character("id2", 1, "user"));
             userCharacters.Add(new Character("id3", 2, "user"));
-            Character targetCharacter = BattleLogic.GetSingleTarget(userCharacters[0], userCharacters, "CLOSET");
+            Character targetCharacter = BattleLogic.GetSingleTarget(userCharacters[0], userCharacters, TARGET_DISTANCE.NEAREST);
             Assert.AreEqual("id2", targetCharacter._id);
         }
         [TestMethod()]
@@ -86,7 +86,7 @@ namespace CombatServiceAPI.Modules
             userCharacters.Add(new Character("id1", 0, "user"));
             userCharacters.Add(new Character("id2", 1, "user"));
             userCharacters.Add(new Character("id3", 2, "user"));
-            Character targetCharacter = BattleLogic.GetSingleTarget(userCharacters[0], userCharacters, "FARTHEST");
+            Character targetCharacter = BattleLogic.GetSingleTarget(userCharacters[0], userCharacters, TARGET_DISTANCE.FARTHEST);
             Assert.AreEqual("id3", targetCharacter._id);
         }
         [TestMethod()]
@@ -109,7 +109,7 @@ namespace CombatServiceAPI.Modules
             expectedResult.Add("id7");
             expectedResult.Add("id10");
             bool isNotContains = false;
-            List<Character> targetCharacters = BattleLogic.GetMultipleTarget(userCharacters[0], opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.ROW_TARGETS);
+            List<Character> targetCharacters = BattleLogic.GetMultipleTarget(userCharacters[0], opponentCharacters, SET_TARGET_TYPE.ROW_TARGETS);
             targetCharacters.ForEach(tChar =>
             {
                 if (expectedResult.FindIndex(eResult => eResult == tChar._id) == -1)
@@ -139,7 +139,7 @@ namespace CombatServiceAPI.Modules
             expectedResult.Add("id5");
             expectedResult.Add("id6");
             bool isNotContains = false;
-            List<Character> targetCharacters = BattleLogic.GetMultipleTarget(userCharacters[0], opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.COLUMN_TARGETS);
+            List<Character> targetCharacters = BattleLogic.GetMultipleTarget(userCharacters[0], opponentCharacters, SET_TARGET_TYPE.COLUMN_TARGETS);
             targetCharacters.ForEach(tChar =>
             {
                 if (expectedResult.FindIndex(eResult => eResult == tChar._id) == -1)
@@ -173,7 +173,7 @@ namespace CombatServiceAPI.Modules
             expectedResult.Add("id9");
             expectedResult.Add("id10");
             bool isNotContains = false;
-            List<Character> targetCharacters = BattleLogic.GetMultipleTarget(userCharacters[0], opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.ALL_TARGETS);
+            List<Character> targetCharacters = BattleLogic.GetMultipleTarget(userCharacters[0], opponentCharacters, SET_TARGET_TYPE.ALL_TARGETS);
             targetCharacters.ForEach(tChar =>
             {
                 if (expectedResult.FindIndex(eResult => eResult == tChar._id) == -1)
@@ -199,8 +199,8 @@ namespace CombatServiceAPI.Modules
             GetBattleInput getBattleInput = new GetBattleInput();
             getBattleInput.userCharacters = new List<Character>();
             getBattleInput.opponentCharacters = new List<Character>();
-            getBattleInput.userCharacters.Add(new Character("1", "key1", 0, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Ignis", 0, 0)));
-            getBattleInput.opponentCharacters.Add(new Character("2", "key2", 0, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Ignis", 0, 0)));
+            getBattleInput.userCharacters.Add(new Character("1", "key1", 0, "Common", new BaseStat(50, 200, 50, 100, 1, "Guardian", "Ignis", 0, 0)));
+            getBattleInput.opponentCharacters.Add(new Character("2", "key2", 0, "Common", new BaseStat(50, 200, 50, 100, 1, "Guardian", "Ignis", 0, 0)));
             string json = JsonSerializer.Serialize(getBattleInput);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpResponseMessage response = await TestClient.PostAsync("/api/combat", httpContent);
@@ -215,8 +215,8 @@ namespace CombatServiceAPI.Modules
             GetBattleInput getBattleInput = new GetBattleInput();
             getBattleInput.userCharacters = new List<Character>();
             getBattleInput.opponentCharacters = new List<Character>();
-            getBattleInput.userCharacters.Add(new Character("1", "key1", 0, new BaseStat(50, 200, 10, 100, 1, "Guardian", "Anima", 0, 0)));
-            getBattleInput.opponentCharacters.Add(new Character("2", "key2", 0, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Ignis", 0, 0)));
+            getBattleInput.userCharacters.Add(new Character("1", "key1", 0, "Common", new BaseStat(50, 200, 10, 100, 1, "Guardian", "Anima", 0, 0)));
+            getBattleInput.opponentCharacters.Add(new Character("2", "key2", 0, "Common", new BaseStat(50, 200, 50, 100, 1, "Guardian", "Ignis", 0, 0)));
             string json = JsonSerializer.Serialize(getBattleInput);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpResponseMessage response = await TestClient.PostAsync("/api/combat", httpContent);
@@ -231,8 +231,8 @@ namespace CombatServiceAPI.Modules
             GetBattleInput getBattleInput = new GetBattleInput();
             getBattleInput.userCharacters = new List<Character>();
             getBattleInput.opponentCharacters = new List<Character>();
-            getBattleInput.userCharacters.Add(new Character("1", "key1", 0, new BaseStat(50, 200, 10, 100, 1, "Guardian", "Earth", 0, 0)));
-            getBattleInput.opponentCharacters.Add(new Character("2", "key2", 0, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Ignis", 0, 0)));
+            getBattleInput.userCharacters.Add(new Character("1", "key1", 0, "Common", new BaseStat(50, 200, 10, 100, 1, "Guardian", "Earth", 0, 0)));
+            getBattleInput.opponentCharacters.Add(new Character("2", "key2", 0, "Common", new BaseStat(50, 200, 50, 100, 1, "Guardian", "Ignis", 0, 0)));
             string json = JsonSerializer.Serialize(getBattleInput);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpResponseMessage response = await TestClient.PostAsync("/api/combat", httpContent);
@@ -249,8 +249,8 @@ namespace CombatServiceAPI.Modules
             GetBattleInput getBattleInput = new GetBattleInput();
             getBattleInput.userCharacters = new List<Character>();
             getBattleInput.opponentCharacters = new List<Character>();
-            getBattleInput.userCharacters.Add(new Character("1", "key1", 0, new BaseStat(50, 200, 10, 100, 1, "Guardian", "Aqua", 0, 0)));
-            getBattleInput.opponentCharacters.Add(new Character("2", "key2", 0, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Ignis", 0, 0)));
+            getBattleInput.userCharacters.Add(new Character("1", "key1", 0, "Common", new BaseStat(50, 200, 10, 100, 1, "Guardian", "Aqua", 0, 0)));
+            getBattleInput.opponentCharacters.Add(new Character("2", "key2", 0, "Common", new BaseStat(50, 200, 50, 100, 1, "Guardian", "Ignis", 0, 0)));
             string json = JsonSerializer.Serialize(getBattleInput);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpResponseMessage response = await TestClient.PostAsync("/api/combat", httpContent);
@@ -271,10 +271,10 @@ namespace CombatServiceAPI.Modules
             GetBattleInput getBattleInput = new GetBattleInput();
             getBattleInput.userCharacters = new List<Character>();
             getBattleInput.opponentCharacters = new List<Character>();
-            getBattleInput.userCharacters.Add(new Character("user0", "key1", 0, new BaseStat(50, 200, 10, 100, 1, "Guardian", "Ignis", 0, 0)));
-            getBattleInput.opponentCharacters.Add(new Character("enemy0", "key2", 0, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Earth", 0, 0)));
-            getBattleInput.opponentCharacters.Add(new Character("enemy3", "key2", 3, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Earth", 0, 0)));
-            getBattleInput.opponentCharacters.Add(new Character("enemy6", "key2", 6, new BaseStat(50, 200, 50, 100, 1, "Guardian", "Earth", 0, 0)));
+            getBattleInput.userCharacters.Add(new Character("user0", "key1", 0, "Common", new BaseStat(50, 200, 10, 100, 1, "Guardian", "Ignis", 0, 0)));
+            getBattleInput.opponentCharacters.Add(new Character("enemy0", "key2", 0, "Common", new BaseStat(50, 200, 50, 100, 1, "Guardian", "Earth", 0, 0)));
+            getBattleInput.opponentCharacters.Add(new Character("enemy3", "key2", 3, "Common", new BaseStat(50, 200, 50, 100, 1, "Guardian", "Earth", 0, 0)));
+            getBattleInput.opponentCharacters.Add(new Character("enemy6", "key2", 6, "Common", new BaseStat(50, 200, 50, 100, 1, "Guardian", "Earth", 0, 0)));
             string json = JsonSerializer.Serialize(getBattleInput);
             StringContent httpContent = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpResponseMessage response = await TestClient.PostAsync("/api/combat", httpContent);

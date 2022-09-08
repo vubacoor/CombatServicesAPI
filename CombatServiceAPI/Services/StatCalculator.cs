@@ -7,20 +7,40 @@ namespace CombatServiceAPI.Services
 {
     public static class StatCalculator
     {
-        public static CombatStat GetDeviantStats(CombatStat stat, Effect effect)
+        public static CombatStat GetDeviantStats(CombatStat stat, Effect effect, string rarity)
         {
             CombatStat deviantStats = new CombatStat(0, 0, 0, 0, 0, 0, 0, 0);
             string amtString = Convert.ToString(effect.amount);
-            float amtPerRariry;
+            float amtPerRariry = 0f;
             if (amtString.Contains("|"))
             {
-                amtPerRariry = float.Parse(effect.amount.ToString().Split("|")[0]);
+                switch ((Rarity)Enum.Parse(typeof(Rarity), rarity, true))
+                {
+                    case Rarity.Common:
+                        amtPerRariry = float.Parse(effect.amount.ToString().Split("|")[0]);
+                        break;
+                    case Rarity.Uncommon:
+                        amtPerRariry = float.Parse(effect.amount.ToString().Split("|")[1]);
+                        break;
+                    case Rarity.Rare:
+                        amtPerRariry = float.Parse(effect.amount.ToString().Split("|")[2]);
+                        break;
+                    case Rarity.Epic:
+                        amtPerRariry = float.Parse(effect.amount.ToString().Split("|")[3]);
+                        break;
+                    case Rarity.Legendary:
+                        amtPerRariry = float.Parse(effect.amount.ToString().Split("|")[4]);
+                        break;
+                    case Rarity.Emperor:
+                        amtPerRariry = float.Parse(effect.amount.ToString().Split("|")[5]);
+                        break;
+                }
             }
             else
             {
                 amtPerRariry = float.Parse(amtString);
             }
-            if (effect.amountType == "PERCENT")
+            if (effect.amountType == AmountType.PERCENT.ToString())
             {
                 switch (effect.statEffect)
                 {
@@ -88,7 +108,7 @@ namespace CombatServiceAPI.Services
             {
                 amtPerRariry = float.Parse(amtString);
             }
-            if (effect.amountType == "PERCENT")
+            if (effect.amountType == AmountType.PERCENT.ToString())
             {
                 switch (effect.statEffect)
                 {
@@ -131,6 +151,29 @@ namespace CombatServiceAPI.Services
                 }
             }
             return recoverAmt;
+        }
+
+        public static CombatStat CalculateTakenHp(float totalDamage, CombatStat targetCombatStat, Effect effect, string rarity)
+        {
+            if (totalDamage > targetCombatStat.shieldAmt)
+            {
+                totalDamage -= targetCombatStat.shieldAmt;
+                targetCombatStat.shieldAmt = 0;
+            }
+            else
+            {
+                targetCombatStat.shieldAmt -= totalDamage;
+                totalDamage = 0;
+            }
+            if (targetCombatStat.takenHp + totalDamage >= targetCombatStat.hp)
+            {
+                targetCombatStat.takenHp = targetCombatStat.hp;
+            }
+            else
+            {
+                targetCombatStat.takenHp += totalDamage;
+            }
+            return targetCombatStat;
         }
     }
 }

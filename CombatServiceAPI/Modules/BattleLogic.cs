@@ -26,6 +26,25 @@ namespace CombatServiceAPI.Modules
         /// <returns>
         /// element counter element & counter by element
         /// </returns>
+        /// 
+        private static float RandomNumberBetween(double minValue, double maxValue)
+        {
+            float randFloat = 0f;
+            double range = maxValue - minValue;
+            for (int i = 0; i < 10; i++)
+            {
+                double sample = s_Random.NextDouble();
+                double scaled = (sample * range) + minValue;
+                randFloat = (float)scaled;
+            }
+            return randFloat;
+        }
+        private static int RandomNumberBetween(int minValue, int maxValue)
+        {
+            int randInt = s_Random.Next(minValue, maxValue);
+
+            return randInt;
+        }
         public static ElementInfo GetElementInfo(string element)
         {
             ElementInfo elementInfo = new ElementInfo();
@@ -71,29 +90,29 @@ namespace CombatServiceAPI.Modules
         /// <returns>
         /// return disaster type if disaster happen, none if not
         /// </returns>
-        public static CONST_COMBAT.DISASTER_TYPE CheckDisater(float luck)
+        public static DISASTER_TYPE CheckDisater(float totalLuck)
         {
-            CONST_COMBAT.DISASTER_TYPE disaster = CONST_COMBAT.DISASTER_TYPE.NONE;
-            double disasterRate = luck * 0.5d;
+            DISASTER_TYPE disaster = DISASTER_TYPE.NONE;
+            double disasterRate = totalLuck * 0.5d;
             double percentTriggerDisaster = s_Random.NextDouble();
             if (percentTriggerDisaster <= disasterRate)
             {
                 double percentDecideDisasterType = s_Random.NextDouble();
                 if (percentDecideDisasterType < 0.3)
                 {
-                    disaster = CONST_COMBAT.DISASTER_TYPE.EARTH_QUAKE;
+                    disaster = DISASTER_TYPE.EARTH_QUAKE;
                 }
                 else if (0.3 <= percentDecideDisasterType && percentDecideDisasterType < 0.6)
                 {
-                    disaster = CONST_COMBAT.DISASTER_TYPE.STORM;
+                    disaster = DISASTER_TYPE.STORM;
                 }
                 else if (0.6 <= percentDecideDisasterType && percentDecideDisasterType < 0.9)
                 {
-                    disaster = CONST_COMBAT.DISASTER_TYPE.LIGHTNING_STRIKE;
+                    disaster = DISASTER_TYPE.LIGHTNING_STRIKE;
                 }
                 else
                 {
-                    disaster = CONST_COMBAT.DISASTER_TYPE.GOD_WILL;
+                    disaster = DISASTER_TYPE.GOD_WILL;
                 }
             }
             return disaster;
@@ -139,22 +158,20 @@ namespace CombatServiceAPI.Modules
                     }
                     if (effect.additionalEffect != "NULL")
                     {
-                        switch (effect.additionalEffect)
+                        if (effect.additionalEffect == AdditionalEffect.BERSERKER.ToString()
+                            || effect.additionalEffect == AdditionalEffect.SELF_EXPLOSION.ToString())
                         {
-                            case "BERSERKER":
-                            case "SELF_EXPLOSION":
-                                string healthUnderPercentString = JsonSerializer.Serialize(effect.additionalData);
-                                float healthUnderPercent = float.Parse(healthUnderPercentString);
-                                var flag = stat.hp / 100f * healthUnderPercent;
-                                if (stat.hp - stat.takenHp <= stat.hp / 100f * healthUnderPercent)
-                                {
-                                    canTrigger = true;
-                                }
-                                else
-                                {
-                                    canTrigger = false;
-                                }
-                                break;
+                            string healthUnderPercentString = JsonSerializer.Serialize(effect.additionalData);
+                            float healthUnderPercent = float.Parse(healthUnderPercentString);
+                            var flag = stat.hp / 100f * healthUnderPercent;
+                            if (stat.hp - stat.takenHp <= stat.hp / 100f * healthUnderPercent)
+                            {
+                                canTrigger = true;
+                            }
+                            else
+                            {
+                                canTrigger = false;
+                            }
                         }
                     }
                 }
@@ -274,48 +291,48 @@ namespace CombatServiceAPI.Modules
         public static List<Character> GetTargets(string targetType, List<Character> userCharacters, List<Character> opponentCharacters, Character caster, string casterSide)
         {
             List<Character> target = new List<Character>();
-            switch (targetType)
+            switch ((Target)Enum.Parse(typeof(Target), targetType, true))
             {
-                case "SELF":
+                case Target.SELF:
                     target.Add(caster);
                     break;
-                case "SINGLE_ENEMY_CLOSEST":
-                    if (casterSide == "user") target.Add(BattleLogic.GetSingleTarget(caster, opponentCharacters, "CLOSET"));
-                    if (casterSide == "opponent") target.Add(BattleLogic.GetSingleTarget(caster, userCharacters, "CLOSET"));
+                case Target.SINGLE_ENEMY_CLOSEST:
+                    if (casterSide == "user") target.Add(BattleLogic.GetSingleTarget(caster, opponentCharacters, TARGET_DISTANCE.NEAREST));
+                    if (casterSide == "opponent") target.Add(BattleLogic.GetSingleTarget(caster, userCharacters, TARGET_DISTANCE.NEAREST));
                     break;
-                case "SINGLE_ALLY_CLOSEST":
-                    if (casterSide == "user") target.Add(BattleLogic.GetSingleTarget(caster, userCharacters, "CLOSET"));
-                    if (casterSide == "opponent") target.Add(BattleLogic.GetSingleTarget(caster, opponentCharacters, "CLOSET"));
+                case Target.SINGLE_ALLY_CLOSEST:
+                    if (casterSide == "user") target.Add(BattleLogic.GetSingleTarget(caster, userCharacters, TARGET_DISTANCE.NEAREST));
+                    if (casterSide == "opponent") target.Add(BattleLogic.GetSingleTarget(caster, opponentCharacters, TARGET_DISTANCE.NEAREST));
                     break;
-                case "SINGLE_ENEMY_FARTHEST":
-                    if (casterSide == "user") target.Add(BattleLogic.GetSingleTarget(caster, opponentCharacters, "FARTHEST"));
-                    if (casterSide == "opponent") target.Add(BattleLogic.GetSingleTarget(caster, userCharacters, "FARTHEST"));
+                case Target.SINGLE_ENEMY_FARTHEST:
+                    if (casterSide == "user") target.Add(BattleLogic.GetSingleTarget(caster, opponentCharacters, TARGET_DISTANCE.FARTHEST));
+                    if (casterSide == "opponent") target.Add(BattleLogic.GetSingleTarget(caster, userCharacters, TARGET_DISTANCE.FARTHEST));
                     break;
-                case "SINGLE_ALLY_FARTHEST":
-                    if (casterSide == "user") target.Add(BattleLogic.GetSingleTarget(caster, userCharacters, "FARTHEST"));
-                    if (casterSide == "opponent") target.Add(BattleLogic.GetSingleTarget(caster, opponentCharacters, "FARTHEST"));
+                case Target.SINGLE_ALLY_FARTHEST:
+                    if (casterSide == "user") target.Add(BattleLogic.GetSingleTarget(caster, userCharacters, TARGET_DISTANCE.FARTHEST));
+                    if (casterSide == "opponent") target.Add(BattleLogic.GetSingleTarget(caster, opponentCharacters, TARGET_DISTANCE.FARTHEST));
                     break;
-                case "ROW_ENEMY_CLOSEST":
-                    if (casterSide == "user") target = BattleLogic.GetMultipleTarget(caster, opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.ROW_TARGETS);
-                    if (casterSide == "opponent") target = BattleLogic.GetMultipleTarget(caster, userCharacters, CONST_COMBAT.SET_TARGET_TYPE.ROW_TARGETS);
+                case Target.ROW_ENEMY_CLOSEST:
+                    if (casterSide == "user") target = BattleLogic.GetMultipleTarget(caster, opponentCharacters, SET_TARGET_TYPE.ROW_TARGETS);
+                    if (casterSide == "opponent") target = BattleLogic.GetMultipleTarget(caster, userCharacters, SET_TARGET_TYPE.ROW_TARGETS);
                     break;
-                case "COLUMN_ENEMY_CLOSEST":
-                    if (casterSide == "user") target = BattleLogic.GetMultipleTarget(caster, opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.COLUMN_TARGETS);
-                    if (casterSide == "opponent") target = BattleLogic.GetMultipleTarget(caster, userCharacters, CONST_COMBAT.SET_TARGET_TYPE.COLUMN_TARGETS);
+                case Target.COLUMN_ENEMY_CLOSEST:
+                    if (casterSide == "user") target = BattleLogic.GetMultipleTarget(caster, opponentCharacters, SET_TARGET_TYPE.COLUMN_TARGETS);
+                    if (casterSide == "opponent") target = BattleLogic.GetMultipleTarget(caster, userCharacters, SET_TARGET_TYPE.COLUMN_TARGETS);
                     break;
-                case "COLUMN_ALLY_CLOSEST":
-                    if (casterSide == "user") target = BattleLogic.GetMultipleTarget(caster, userCharacters, CONST_COMBAT.SET_TARGET_TYPE.COLUMN_TARGETS);
-                    if (casterSide == "opponent") target = BattleLogic.GetMultipleTarget(caster, opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.COLUMN_TARGETS);
+                case Target.COLUMN_ALLY_CLOSEST:
+                    if (casterSide == "user") target = BattleLogic.GetMultipleTarget(caster, userCharacters, SET_TARGET_TYPE.COLUMN_TARGETS);
+                    if (casterSide == "opponent") target = BattleLogic.GetMultipleTarget(caster, opponentCharacters, SET_TARGET_TYPE.COLUMN_TARGETS);
                     break;
-                case "ALL_ENEMY":
-                    if (casterSide == "user") target = BattleLogic.GetMultipleTarget(caster, opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.ALL_TARGETS);
-                    if (casterSide == "opponent") target = BattleLogic.GetMultipleTarget(caster, userCharacters, CONST_COMBAT.SET_TARGET_TYPE.ALL_TARGETS);
+                case Target.ALL_ENEMY:
+                    if (casterSide == "user") target = BattleLogic.GetMultipleTarget(caster, opponentCharacters, SET_TARGET_TYPE.ALL_TARGETS);
+                    if (casterSide == "opponent") target = BattleLogic.GetMultipleTarget(caster, userCharacters, SET_TARGET_TYPE.ALL_TARGETS);
                     break;
-                case "ALL_ALLY":
-                    if (casterSide == "user") target = BattleLogic.GetMultipleTarget(caster, userCharacters, CONST_COMBAT.SET_TARGET_TYPE.ALL_TARGETS);
-                    if (casterSide == "opponent") target = BattleLogic.GetMultipleTarget(caster, opponentCharacters, CONST_COMBAT.SET_TARGET_TYPE.ALL_TARGETS);
+                case Target.ALL_ALLY:
+                    if (casterSide == "user") target = BattleLogic.GetMultipleTarget(caster, userCharacters, SET_TARGET_TYPE.ALL_TARGETS);
+                    if (casterSide == "opponent") target = BattleLogic.GetMultipleTarget(caster, opponentCharacters, SET_TARGET_TYPE.ALL_TARGETS);
                     break;
-                case "RANDOM_ENEMY":
+                case Target.RANDOM_ENEMY:
                     if (casterSide == "user") target.Add(GetRandomEnemy(opponentCharacters));
                     if (casterSide == "opponent") target.Add(GetRandomEnemy(userCharacters));
                     break;
@@ -340,7 +357,7 @@ namespace CombatServiceAPI.Modules
             targetCharacter = targetCharacters[randomCharIndex];
             return targetCharacter;
         }
-        public static Character GetSingleTarget(Character character, List<Character> targetCharacters, string setTargetType)
+        public static Character GetSingleTarget(Character character, List<Character> targetCharacters, TARGET_DISTANCE targetDistance)
         {
             targetCharacters = targetCharacters.Where(tCharacter => tCharacter._id != character._id && !CheckIfDead(tCharacter)).ToList();
             int charPos = character.position;
@@ -356,7 +373,7 @@ namespace CombatServiceAPI.Modules
                 }
                 else
                 {
-                    if (setTargetType == "CLOSET")
+                    if (targetDistance == TARGET_DISTANCE.NEAREST)
                     {
                         var flag = 1;
                         if (distance < distanceWithCharacter.distance)
@@ -365,7 +382,7 @@ namespace CombatServiceAPI.Modules
                             distanceWithCharacter.character = targetCharacters[i];
                         }
                     }
-                    else if (setTargetType == "FARTHEST")
+                    else if (targetDistance == TARGET_DISTANCE.FARTHEST)
                     {
                         if (distance > distanceWithCharacter.distance)
                         {
@@ -391,7 +408,7 @@ namespace CombatServiceAPI.Modules
         /// <returns>
         /// List of targets
         /// </returns>
-        public static List<Character> GetMultipleTarget(Character character, List<Character> targetCharacters, CONST_COMBAT.SET_TARGET_TYPE setTargetType)
+        public static List<Character> GetMultipleTarget(Character character, List<Character> targetCharacters, SET_TARGET_TYPE setTargetType)
         {
             targetCharacters = targetCharacters.Where(tCharacter => !CheckIfDead(tCharacter)).ToList();
             int charPos = character.position;
@@ -399,13 +416,13 @@ namespace CombatServiceAPI.Modules
             for (int i = 0; i < targetCharacters.Count; i++)
             {
                 int tPosition = targetCharacters[i].position;
-                if (setTargetType == CONST_COMBAT.SET_TARGET_TYPE.ALL_TARGETS)
+                if (setTargetType == SET_TARGET_TYPE.ALL_TARGETS)
                 {
                     characters = targetCharacters;
                 }
-                else if (setTargetType == CONST_COMBAT.SET_TARGET_TYPE.ROW_TARGETS)
+                else if (setTargetType == SET_TARGET_TYPE.ROW_TARGETS)
                 {
-                    Character nearestOpponent = BattleLogic.GetSingleTarget(character, targetCharacters, "CLOSET");
+                    Character nearestOpponent = BattleLogic.GetSingleTarget(character, targetCharacters, TARGET_DISTANCE.NEAREST);
                     switch (nearestOpponent.position)
                     {
                         case 0:
@@ -425,9 +442,9 @@ namespace CombatServiceAPI.Modules
                             break;
                     }
                 }
-                else if (setTargetType == CONST_COMBAT.SET_TARGET_TYPE.COLUMN_TARGETS)
+                else if (setTargetType == SET_TARGET_TYPE.COLUMN_TARGETS)
                 {
-                    Character nearestOpponent = BattleLogic.GetSingleTarget(character, targetCharacters, "CLOSET");
+                    Character nearestOpponent = BattleLogic.GetSingleTarget(character, targetCharacters, TARGET_DISTANCE.NEAREST);
                     switch (nearestOpponent.position)
                     {
                         case 0:
@@ -449,109 +466,6 @@ namespace CombatServiceAPI.Modules
                 }
             }
             return characters;
-        }
-        /// <summary>
-        /// Get effect output
-        /// </summary>
-        /// <param name="effect">
-        /// Effect need to get effect output
-        /// </param>
-        /// <param name="targetType">
-        /// effect's target type
-        /// </param>
-        /// <param name="userCharacters">
-        /// list of user characters
-        /// </param>
-        /// <param name="opponentCharacters">
-        /// list of opponnent characters
-        /// </param>
-        /// <param name="caster">
-        /// Caster of effect
-        /// </param>
-        /// <param name="casterSide">
-        /// side of caster (user or opponent)
-        /// </param>
-        /// <param name="currentTurn">
-        /// current turn
-        /// </param>
-        /// <returns></returns>
-        public static List<EffectOutput> GetEffectOutput(Effect effect, string targetType, List<Character> userCharacters, List<Character> opponentCharacters, Character caster, string casterSide, int currentTurn)
-        {
-            List<EffectOutput> effectOutputs = new List<EffectOutput>();
-            List<Character> targets = BattleLogic.GetTargets(targetType, userCharacters, opponentCharacters, caster, casterSide);
-
-            if (targets != null && targets[0] != null && targets.Count > 0)
-            {
-                if (effect.additionalEffect == "NULL")
-                {
-                    if (effect.effectBase == "STAT_CHANGE")
-                    {
-                        targets.ForEach(target =>
-                        {
-                            target.ApplyEffect(effect, currentTurn);
-                            CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
-                            if (effect.expireTurn == -1)
-                            {
-                                effectOutputs.Add(new EffectOutput(target._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
-                            }
-                            else
-                            {
-                                effectOutputs.Add(new EffectOutput(target._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, effect.expireTurn, targetNewStat));
-                            }
-                        });
-                    }
-                    else if (effect.effectBase == "ELEMENT_DAMAGE" || effect.effectBase == "FLAT_DAMAGE")
-                    {
-                        var flag = true;
-                        targets.ForEach(target =>
-                        {
-                            caster.ApplyActiveEffect(effect, target, currentTurn);
-                            CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
-                            effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
-                        });
-                    }
-                    else if (effect.effectBase == "FLAT_RECOVER")
-                    {
-                        targets.ForEach(target =>
-                        {
-                            caster.ApplyRecoverEffect(effect, target, currentTurn);
-                            CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
-                            effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
-                        });
-                    }
-                }
-                else
-                {
-                    if (effect.effectBase == "ELEMENT_DAMAGE" || effect.effectBase == "FLAT_DAMAGE")
-                    {
-                        if (effect.additionalEffect == "CHAIN ATTACK")
-                        {
-                            string chainAmtString = JsonSerializer.Serialize(effect.additionalData);
-                            int chainAmt = Int32.Parse(chainAmtString);
-                            for (int i = 0; i < chainAmt; i++)
-                            {
-                                targets.ForEach(target =>
-                                {
-                                    caster.ApplyActiveEffect(effect, target, currentTurn);
-                                    CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
-                                    effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
-                                });
-                            }
-                        }
-                    }
-                    else
-                    {
-                        targets.ForEach(target =>
-                            {
-                                var flag = targetType;
-                                caster.ApplySpecialEffect(effect, target);
-                                CombatStat targetNewStat = new CombatStat(target.combatStat.atk, target.combatStat.def, target.combatStat.speed, target.combatStat.hp, target.combatStat.takenHp, 0, target.combatStat.crit, target.combatStat.luck);
-                                effectOutputs.Add(new EffectOutput(caster._id, target._id, effect.effectBase, effect.statEffect, effect.additionalEffect, targetNewStat));
-                            });
-                    }
-                }
-            }
-            return effectOutputs;
         }
         /// <summary>
         /// Check if finished combat (combat is finished when all characters of one side all have takenHp <= combat stat hp)
@@ -618,7 +532,7 @@ namespace CombatServiceAPI.Modules
         /// </returns>
         public static bool CheckIfDead(Character character)
         {
-            bool isDead = false;
+            bool isDead;
             if (character.combatStat.takenHp >= character.combatStat.hp)
             {
                 isDead = true;
@@ -628,6 +542,18 @@ namespace CombatServiceAPI.Modules
                 isDead = false;
             }
             return isDead;
+        }
+
+        public static float GetTakenDamage(Character attackChar, Character attackedChar)
+        {
+            float takenDamage;
+            float atkStat = attackChar.combatStat.atk;
+            float defStat = attackedChar.combatStat.def;
+            float shieldStat = attackedChar.combatStat.shieldAmt;
+            float mitigation = 0;
+            float rand = RandomNumberBetween(0.9f, 1.1f);
+            takenDamage = (((atkStat * atkStat) / (atkStat + defStat)) * 1 * rand) * mitigation - shieldStat;
+            return takenDamage;
         }
     }
 }

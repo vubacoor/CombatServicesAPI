@@ -57,7 +57,7 @@ namespace CombatServiceAPI.Passive.Decorators
                     base.CalculateStat(combatStat, turn).def += baseStat.def / 100 * amtPerRariry;
                     break;
                 case StatEffect.DAMAGE_TARGET:
-                    base.CalculateStat(combatStat, turn).reduceDamage = amtPerRariry;
+                    base.CalculateStat(combatStat, turn).shieldAmt = amtPerRariry;
                     break;
             }
 

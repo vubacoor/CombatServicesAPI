@@ -1,31 +1,27 @@
-﻿public class CONST_COMBAT
+﻿public enum SET_TARGET_TYPE
 {
-    public enum SET_TARGET_TYPE
-    {
-        NEAREST_TARGET,
-        FARTHEST_TARGET,
+    NEAREST_TARGET,
+    FARTHEST_TARGET,
 
-        ROW_TARGETS,
-        COLUMN_TARGETS,
-        ALL_TARGETS,
-    }
-
-    public enum CAST_TYPE
-    {
-        ATTACK,
-        BUFF,
-    }
-
-    public enum DISASTER_TYPE
-    {
-        EARTH_QUAKE,
-        STORM,
-        LIGHTNING_STRIKE,
-        GOD_WILL,
-        NONE
-    }
+    ROW_TARGETS,
+    COLUMN_TARGETS,
+    ALL_TARGETS,
 }
 
+public enum CAST_TYPE
+{
+    ATTACK,
+    BUFF,
+}
+
+public enum DISASTER_TYPE
+{
+    EARTH_QUAKE,
+    STORM,
+    LIGHTNING_STRIKE,
+    GOD_WILL,
+    NONE
+}
 public class ELEMENT
 {
     public const string Ignis = "Ignis";
@@ -81,4 +77,71 @@ public class PhaseTrigger
     public const string OVERRIDE_PHASE = "OVERRIDE_PHASE";
     public const string START_ORDER = "START_ORDER";
     public const string END_ORDER = "END_ORDER";
+}
+
+public enum Rarity
+{
+    Common,
+    Uncommon,
+    Rare,
+    Epic,
+    Legendary,
+    Emperor
+}
+public enum EffectBase
+{
+    ELEMENT_DAMAGE,
+    FLAT_DAMAGE,
+    TRUE_DAMAGE,
+    ELEMENT_RECOVER,
+    FLAT_RECOVER,
+    FLAT_SHIELD,
+    ELEMENT_SHIELD,
+    SHIELD,
+    ELEMENT_REFLECT_SHIELD,
+    REFLECT_SHIELD,
+    STAT_CHANGE,
+    STAT_CHANGE_TOTAL,
+    REDUCE_DAMAGE_TAKEN,
+    BONDING_ALLY_NEAREST
+}
+public enum AmountType
+{
+    FLAT,
+    PERCENT
+}
+public enum Target
+{
+    SELF,
+    SINGLE_ENEMY_CLOSEST,
+    SINGLE_ALLY_CLOSEST,
+    SINGLE_ENEMY_FARTHEST,
+    SINGLE_ALLY_FARTHEST,
+    ROW_ENEMY_CLOSEST,
+    ROW_ALLY_CLOSEST,
+    COLUMN_ENEMY_CLOSEST,
+    COLUMN_ALLY_CLOSEST,
+    ALL_ENEMY,
+    ALL_ALLY,
+    OVERRIDE_TARGET,
+    RANDOM_ENEMY
+}
+
+public enum AdditionalEffect
+{
+    BONDING,
+    CHAIN_ATTACK,
+    RELEASE_POWER,
+    RECOVER_COMBINE,
+    SELF_EXPLOSION,
+    SHIELD_COMBINE,
+    BERSERKER,
+    FIRE_ROAR,
+    STAT_MAX_CHANGE_PERCENT
+}
+
+public enum TARGET_DISTANCE
+{
+    NEAREST,
+    FARTHEST
 }

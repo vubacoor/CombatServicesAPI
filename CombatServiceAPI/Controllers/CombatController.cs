@@ -11,7 +11,7 @@ using System.Net.Http;
 
 namespace CombatServiceAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v0.0.1/[controller]")]
     [ApiController]
     public class CombatController : ControllerBase
     {
@@ -26,12 +26,11 @@ namespace CombatServiceAPI.Controllers
             BattleData battleData = battle.GetCombatData();
             return battleData;
         }
-
         public async Task<Dictionary<string, Dictionary<string, Effect>>> GetEffectsConfig()
         {
             using (var client = new HttpClient())
             {
-                using (var response = await client.GetAsync("https://jsonkeeper.com/b/Z992"))
+                using (var response = await client.GetAsync("https://ipfs.pantograph.app/ipfs/Qmf5xVyTJWB17YHtJ3agybEfNVY7R5QFGsUieeLhD6Q5RU"))
                 {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     Dictionary<string, Dictionary<string, Effect>> effects = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, Effect>>>(apiResponse);

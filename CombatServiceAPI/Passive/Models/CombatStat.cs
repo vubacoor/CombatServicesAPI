@@ -7,20 +7,20 @@
         public float speed { get; set; }
         public float hp { get; set; }
         public float takenHp { get; set; }
-        public float reduceDamage { get; set; }
+        public float shieldAmt { get; set; }
         public float crit { get; set; }
         public float luck { get; set; }
         public CombatStat()
         {
         }
-        public CombatStat(float atk, float def, float speed, float hp, float takenHp, float reduceDamage, float crit, float luck)
+        public CombatStat(float atk, float def, float speed, float hp, float takenHp, float shieldAmt, float crit, float luck)
         {
             this.atk = atk;
             this.def = def;
             this.speed = speed;
             this.hp = hp;
             this.takenHp = takenHp;
-            this.reduceDamage = reduceDamage;
+            this.shieldAmt = shieldAmt;
             this.crit = crit;
             this.luck = luck;
         }

@@ -2,56 +2,6 @@
 
 namespace CombatServiceAPI.Passive.Models
 {
-    public enum EffectType
-    {
-        Passive,
-        Active,
-        Ultimate
-    }
-    public enum EffectBase
-    {
-        ELEMENT_DAMAGE,
-        FLAT_DAMAGE,
-        TRUE_DAMAGE,
-        ELEMENT_RECOVER,
-        FLAT_RECOVER,
-        ELEMENT_SHIELD,
-        SHIELD,
-        ELEMENT_REFLECT_SHIELD,
-        REFLECT_SHIELD,
-        STAT_CHANGE,
-        STAT_CHANGE_TOTAL,
-        REDUCE_DAMAGE_TAKEN
-    }
-    public enum AmountType
-    {
-        FLAT,
-        PERCENT
-    }
-    public enum Target
-    {
-        SELF,
-        SINGLE_ENEMY_CLOSEST,
-        SINGLE_ALLY_CLOSEST,
-        SINGLE_ENEMY_FARTHEST,
-        SINGLE_ALLY_FARTHEST,
-        ROW_ENEMY_CLOSEST,
-        ROW_ALLY_CLOSEST,
-        COLUMN_ENEMY_CLOSEST,
-        COLUMN_ALLY_CLOSEST,
-        ALL_ENEMY,
-        ALL_ALLY,
-        OVERRIDE_TARGET
-    }
-    public enum Rarity
-    {
-        Comon,
-        Uncomon,
-        Rare,
-        Epic,
-        Legendary,
-        Emperor
-    }
     public class Effect
     {
         public string id { get; set; }
